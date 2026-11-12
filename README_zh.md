@@ -6,6 +6,10 @@
 
 [English](README.md) · **简体中文**
 
+<!-- learning-guide:start -->
+> **[详细学习与使用指南（中英双语 HTML）](docs/LearningGuide.html)** — 包含全部元件参考、接口与参数、逐例讲解和排错说明。下载单文件后用浏览器打开，可切换中文/英文并搜索元件。
+<!-- learning-guide:end -->
+
 [![Source version 0.3.1](https://img.shields.io/badge/source-v0.3.1-5453a4)](package.mo)
 [![Modelica Standard Library 4.0.0](https://img.shields.io/badge/MSL-4.0.0-536478)](package.mo)
 
