@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish only an audited guide and its two README entry points."""
+"""Publish an audited guide and navigation in existing README files only."""
 from pathlib import Path
 import argparse, json, subprocess
 from lessons import LESSONS
@@ -29,8 +29,14 @@ links={
 'README.md':'> **[Detailed bilingual learning and usage guide](docs/LearningGuide.html)** — Chinese and British English in one offline-readable HTML file, with a complete component reference and every example explained. Download the HTML and open it in a browser to use language switching and search.\n',
 'README_zh.md':'> **[详细学习与使用指南（中英双语 HTML）](docs/LearningGuide.html)** — 包含全部元件参考、接口与参数、逐例讲解和排错说明。下载单文件后用浏览器打开，可切换中文/英文并搜索元件。\n'
 }
+allowed={'docs/LearningGuide.html'}
 for name,text in links.items():
     p=Path(name)
+    if not p.exists():
+        if name != 'README_zh.md':
+            raise SystemExit('Required README is missing: '+name)
+        # Preserve the maintainer's deletion; the bilingual guide supplies Chinese.
+        continue
     current=p.read_text(encoding='utf-8')
     if '<!-- learning-guide:start -->' in current:
         raise SystemExit('Guide navigation already exists; review before editing.')
@@ -40,14 +46,17 @@ for name,text in links.items():
         raise SystemExit('Could not locate the language navigation in '+name)
     block='\n<!-- learning-guide:start -->\n'+text+'<!-- learning-guide:end -->\n'
     lines.insert(index,block)
-    p.write_text(''.join(lines),encoding='utf-8')
-allowed={'docs/LearningGuide.html','README.md','README_zh.md'}
+    updated=''.join(lines)
+    if name=='README.md' and not Path('README_zh.md').exists():
+        updated=updated.replace('[简体中文](README_zh.md)', '[简体中文](docs/LearningGuide.html)')
+    p.write_text(updated,encoding='utf-8')
+    allowed.add(name)
 subprocess.run(['git','add',*sorted(allowed)],check=True)
 changed=set(git('diff','--cached','--name-only').splitlines())
 if changed != allowed:
     raise SystemExit('Unexpected staged paths: '+str(changed))
 # HTML preformatted excerpts deliberately retain the original source whitespace.
-subprocess.run(['git','diff','--cached','--check','--','README.md','README_zh.md'],check=True)
+subprocess.run(['git','diff','--cached','--check','--',*sorted(allowed-{'docs/LearningGuide.html'})],check=True)
 subprocess.run(['git','config','user.name','github-actions[bot]'],check=True)
 subprocess.run(['git','config','user.email','41898282+github-actions[bot]@users.noreply.github.com'],check=True)
 subprocess.run(['git','commit','-m','docs: add comprehensive Chinese and British English learning guide'],check=True)
