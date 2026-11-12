@@ -1,0 +1,44 @@
+name: Render bilingual learning guides
+on:
+  push:
+    branches: [docs/bilingual-guides-20261112]
+    paths: [.github/workflows/guide-render.yml]
+permissions:
+  contents: read
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Render from the exact reviewed source revisions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python .guide-build/patch_renderer.py
+          mkdir -p preview/builder preview/guides snapshots
+          cp .guide-build/*.py preview/builder/
+          python - <<'PY'
+          import sys, subprocess, json
+          from pathlib import Path
+          sys.path.insert(0, '.guide-build')
+          from lessons import LESSONS
+          from build_guides import render
+          manifest=[]
+          for repo, lesson in LESSONS.items():
+              source=Path('snapshots')/repo
+              subprocess.run(['git','clone','--quiet','https://github.com/Ruizhe-Yang/'+repo+'.git',str(source)],check=True)
+              subprocess.run(['git','-C',str(source),'checkout','--quiet',lesson['sha']],check=True)
+              sha=subprocess.check_output(['git','-C',str(source),'rev-parse','HEAD'],text=True).strip()
+              output=Path('preview/guides')/(repo+'_LearningGuide.html')
+              manifest.append(render(source,repo,sha,output))
+          Path('preview/manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
+          print(json.dumps(manifest,ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bilingual-guides-preview
+          path: preview/
+          retention-days: 2
+          if-no-files-found: error
