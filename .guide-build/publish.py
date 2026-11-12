@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Publish only an audited guide and its two README entry points."""
 from pathlib import Path
-import argparse, hashlib, json, subprocess
+import argparse, json, subprocess
 from lessons import LESSONS
 from build_guides import render
 
@@ -46,12 +46,12 @@ subprocess.run(['git','add',*sorted(allowed)],check=True)
 changed=set(git('diff','--cached','--name-only').splitlines())
 if changed != allowed:
     raise SystemExit('Unexpected staged paths: '+str(changed))
-subprocess.run(['git','diff','--cached','--check'],check=True)
+# HTML preformatted excerpts deliberately retain the original source whitespace.
+subprocess.run(['git','diff','--cached','--check','--','README.md','README_zh.md'],check=True)
 subprocess.run(['git','config','user.name','github-actions[bot]'],check=True)
 subprocess.run(['git','config','user.email','41898282+github-actions[bot]@users.noreply.github.com'],check=True)
 subprocess.run(['git','commit','-m','docs: add comprehensive Chinese and British English learning guide'],check=True)
 commit=git('rev-parse','HEAD')
-# Non-forced push rejects any concurrent change rather than overwriting it.
 subprocess.run(['git','push','origin','HEAD:main'],check=True)
 manifest.update(published_commit=commit,changed_paths=sorted(changed))
 a.report.parent.mkdir(parents=True,exist_ok=True)
