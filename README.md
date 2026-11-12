@@ -6,7 +6,7 @@
 
 **English** · [简体中文](README_zh.md)
 
-[![Source version 0.3.0](https://img.shields.io/badge/source-v0.3.0-5453a4)](package.mo)
+[![Source version 0.3.1](https://img.shields.io/badge/source-v0.3.1-5453a4)](package.mo)
 [![Modelica Standard Library 4.0.0](https://img.shields.io/badge/MSL-4.0.0-536478)](package.mo)
 
 [Purpose](#purpose) · [Evidence semantics](#evidence-semantics) · [Quick start](#quick-start) · [Examples](#examples) · [Research use](#research-use)
@@ -22,10 +22,10 @@ The blocks read signals from the host model. They can therefore be connected as 
 | At a glance | Current source |
 | :--- | :--- |
 | Modelica package | `EvaluationLibrary` |
-| Package version | **0.3.0**, declared in [package.mo](package.mo) |
+| Package version | **0.3.1**, declared in [package.mo](package.mo) |
 | Declared library dependency | Modelica Standard Library **4.0.0** |
-| Example definitions | **10**, including one with an outstanding packaging dependency described below |
-| Reviewed source baseline | [`88ec735`](https://github.com/Ruizhe-Yang/EvaluationLibrary/commit/88ec73514a431f777d761f29b9b970dbf1dee6a7), 12 November 2026 |
+| Example definitions | **10**, including structured result reporting |
+| Documentation and source review | **12 November 2026**; see the Git revision of the version used |
 
 ## Evidence semantics
 
@@ -53,13 +53,20 @@ The [verdict function](Utilities/Functions/ToVerdict.mo) gives invalid data prec
 | [Requirements](Requirements) | Bounds, persistence, deadlines and conjunction of qualified results |
 | [Comparison](Comparison) | Paired improvement, channel consistency and binary label statistics |
 | [Frequency](Frequency) | Finite DFT, selected-frequency amplitude/phase, harmonic distortion and peak decay |
+| [Results](Results) | Qualified result tables, aggregate verdicts and one-shot CSV, text and console outputs |
 | [Utilities](Utilities) | Evidence qualification, typed connectors, records, numerical and formatting helpers |
 | [Examples](Examples) | Connected demonstrations with explicit observation windows |
 | [UsersGuide](UsersGuide) | In-tool information pages |
 
 ## Current source status
 
-**Packaging gap.** [package.order](package.order) and the [model catalogue](model-catalog.csv) declare a `Results` package, but that directory is absent from the reviewed Git checkout. Consequently, the result-table, aggregate-writer and file-export workflow in [`ResultAggregationAndFiles`](Examples/ResultAggregationAndFiles.mo) has unresolved class dependencies. The catalogue's `Results.*` entries are not presently shipped implementations. Resolve that packaging gap before using that workflow or claiming a successful whole-library check. The table above describes the packages actually present.
+`Results` now includes the result table, verdict aggregation, one-shot CSV/TXT writers and a console writer. The earlier missing-package blocker for [`ResultAggregationAndFiles`](Examples/ResultAggregationAndFiles.mo) has been addressed at source level. Other `Results.*` classes appearing in the previous catalogue were not present in the source snapshot and have been removed from the catalogue rather than represented as supported components. **The newly restored workflow has not yet been compiled or simulated in OpenModelica in this editing environment.**
+
+### Completion logs (v0.3.1)
+
+When a result set is finalised, the output components print an audit message **once**, not on every simulation time step. Successful file exports are logged after closing and verifying the file. Messages contain the host-local timestamp, simulation time, output type, absolute destination path, run ID, result-set ID and record count. Console outputs identify `terminal (stdout)`; in-memory result tables and aggregated verdicts identify their Modelica variable, not a fictitious file.
+
+The default file policy is `RejectExisting`: an existing target produces a `SKIPPED` message, and no success is claimed. Set `writePolicy=EvaluationLibrary.Utilities.Types.WritePolicy.Overwrite` when replacement is intentional. The `outputDirectory` must already exist; file names default to `runId_resultSetId.csv` or `.txt`.
 
 ## Quick start
 
@@ -68,19 +75,14 @@ git clone https://github.com/Ruizhe-Yang/EvaluationLibrary.git
 cd EvaluationLibrary
 ```
 
-Load **Modelica 4.0.0** and open the root `package.mo`. Inspect loading and translation diagnostics in view of the packaging note above. For the core metric implementation, start with `EvaluationLibrary.Examples.AnalyticStatistics`, which has no reference to the missing `Results` package. Its experiment is **0–2.1 s**, with tolerance **1e-6**.
+Load **Modelica 4.0.0** and open the root `package.mo`. For the core metric implementation, start with `EvaluationLibrary.Examples.AnalyticStatistics`, which is independent of the export components. Its experiment is **0–2.1 s**, with tolerance **1e-6**.
 
-If loading reports the absent `Results` entry, restore the missing source package before attempting simulation. The core example below is the intended OpenModelica entry point; it is not a claim that this checkout passes a whole-library load or translation:
+From the repository directory, run the following OpenModelica commands to check the package and simulate the analytical example (the commands are provided for reproduction and have **not** been executed in this edit):
 
 ```modelica
 loadModel(Modelica, {"4.0.0"});
 loadFile("package.mo");
-getErrorString();
-```
-
-Continue only if package loading succeeds (`loadFile` returns `true`):
-
-```modelica
+checkModel(EvaluationLibrary.Examples.AnalyticStatistics);
 simulate(EvaluationLibrary.Examples.AnalyticStatistics,
   startTime=0, stopTime=2.1, numberOfIntervals=500, tolerance=1e-6);
 getErrorString();
@@ -101,7 +103,11 @@ The input is `u=time`, and the observation window is `[0, 2)`. Analytical refere
 | [HarmonicMeasurements](Examples/HarmonicMeasurements.mo) | What can a finite coherent sample window reveal? | `spectrum.amplitude`, `fundamentalValue`, `distortion.thd` | 2.1 s |
 | [DecayMeasurement](Examples/DecayMeasurement.mo) | How do qualified positive peaks attenuate? | `decay.peakCount`, `decay.ratio`, `decay.logarithmicDecrement` | 3.1 s |
 | [IncompleteWindow](Examples/IncompleteWindow.mo) | How does termination before the requested end affect evidence? | `noWitness.dataStatus`, `.verdict`; `withWitness.everViolated` | 1 s |
-| [ResultAggregationAndFiles](Examples/ResultAggregationAndFiles.mo) | Intended structured result and writer workflow | **Blocked by the missing `Results` package** | 2.1 s |
+| [ResultAggregationAndFiles](Examples/ResultAggregationAndFiles.mo) | Intended structured result and writer workflow | `Results` entry points restored in v0.3.1; execution not yet re-verified | 2.1 s |
+
+### Export smoke test
+
+Run [the supplied OpenModelica script](Resources/Scripts/export_smoke.mos) from the repository root to exercise the three result writers. Inspect the terminal for the `SUCCESS` messages and the absolute paths of `demo_csv.csv` and `demo_text.txt`. Run it again without deleting the files to inspect `SKIPPED` behaviour, or configure `Overwrite`. The script is provided for verification; its outcome has not been asserted here.
 
 ## Research use
 
@@ -109,11 +115,11 @@ Choose the observation window and criterion before interpreting a result. Record
 
 For comparisons, establish matching units, windows and interpretations. For settling time, [`Response.SettlingTime`](Response/SettlingTime.mo) confirms the final band entry only at the end of a fully observed window with the required dwell. For repeated responses, [`Response.RepeatedResponse`](Response/RepeatedResponse.mo) uses a finite FIFO queue and distinguishes timeouts, unmatched responses and requests censored by the end of observation. These distinctions should remain visible in reported results.
 
-When citing the software, identify **EvaluationLibrary, version 0.3.0**, the repository URL and the commit used. The [change log](CHANGELOG.md) and [commit history](https://github.com/Ruizhe-Yang/EvaluationLibrary/commits/main/) support maintenance and replication.
+When citing the software, identify **EvaluationLibrary, version 0.3.1**, the repository URL and the commit used. The [change log](CHANGELOG.md) and [commit history](https://github.com/Ruizhe-Yang/EvaluationLibrary/commits/main/) support maintenance and replication.
 
 ## Scope and assumptions
 
-Assessment depends on the supplied signals, their validity and the chosen observation conditions. A result does not independently establish the fidelity of the host model or certify a physical system. Frequency analysis depends on the declared finite sampling grid and window; event pairing has explicit queue and record capacities. The current packaging gap limits the documented result-export workflow. Reproduce the selected example and its numerical expectations in the intended Modelica tool before using it in an experiment.
+Assessment depends on the supplied signals, their validity and the chosen observation conditions. A result does not independently establish the fidelity of the host model or certify a physical system. Frequency analysis depends on the declared finite sampling grid and window; event pairing has explicit queue and record capacities. The newly restored export components still require independent tool-based verification. Reproduce the selected example and its numerical expectations in the intended Modelica tool before using it in an experiment.
 
 ## Licence and contributions
 

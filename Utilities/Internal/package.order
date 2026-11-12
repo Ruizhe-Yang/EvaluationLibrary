@@ -6,6 +6,7 @@ SpectrumBuffer
 ToneSpectrum
 WindowEvidence
 WriteRows
+LogCompletion
 csvQuote
 formatResults
 oneSidedDFT

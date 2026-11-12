@@ -1,0 +1,6 @@
+ResultTable
+VerdictAggregator
+PartialWriter
+CSVWriter
+TextWriter
+ConsoleWriter

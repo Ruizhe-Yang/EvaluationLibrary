@@ -1,0 +1,9 @@
+// Run from the EvaluationLibrary repository root with MSL 4.0.0 installed.
+// Output files are created in the simulation process working directory.
+loadModel(Modelica, {"4.0.0"});
+loadFile("package.mo");
+getErrorString();
+checkModel(EvaluationLibrary.Examples.ResultAggregationAndFiles);
+simulate(EvaluationLibrary.Examples.ResultAggregationAndFiles,
+  startTime=0, stopTime=2.1, numberOfIntervals=500, tolerance=1e-6);
+getErrorString();

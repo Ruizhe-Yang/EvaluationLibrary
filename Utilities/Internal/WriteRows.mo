@@ -1,30 +1,61 @@
 within EvaluationLibrary.Utilities.Internal;
-impure function WriteRows "Write a whole result set once with an explicit file policy"
+impure function WriteRows "Write one complete result set and report its outcome to the terminal"
   extends Modelica.Icons.Function;
-input String path;
+  input String path "Output path; ignored for console output";
   input String runId;
   input EvaluationLibrary.Utilities.Types.MetricResult records[:];
   input EvaluationLibrary.Utilities.Types.WritePolicy writePolicy=EvaluationLibrary.Utilities.Types.WritePolicy.RejectExisting;
   input Boolean csv=false;
   input Boolean console=false;
+  input String resultSetId="" "Identifier included in the audit message";
+  input Modelica.Units.SI.Time simulationTime=0 "Simulation instant of export";
+  input Boolean logToConsole=true "Log success or skip once per call";
   output Boolean written;
   output Boolean skippedExisting;
 protected
   Boolean exists;
+  Boolean logged;
+  String target;
+  String formatName;
+  String action;
 algorithm
+  assert(console or Modelica.Utilities.Strings.length(path)>0,
+    "WriteRows requires a non-empty destination path for file exports.");
+  target:=if console then "" else path;
+  formatName:=if csv then "CSV" elseif console then "console text" else "text";
   exists:=if console then false else Modelica.Utilities.Files.exist(path);
   skippedExisting:=exists and writePolicy==EvaluationLibrary.Utilities.Types.WritePolicy.RejectExisting;
   written:=false;
+
   if not skippedExisting then
-    if exists then Modelica.Utilities.Files.removeFile(path); end if;
+    if exists then
+      Modelica.Utilities.Files.removeFile(path);
+    end if;
     if csv then
-      Modelica.Utilities.Streams.print("runId,metricId,requirementVersion,value,valueAvailable,unit,dataStatus,verdict,windowStart,windowStop,everViolated,firstViolationTime,message",path);
+      Modelica.Utilities.Streams.print(
+        "runId,metricId,requirementVersion,value,valueAvailable,unit,dataStatus,verdict,windowStart,windowStop,everViolated,firstViolationTime,message",target);
     end if;
     for i in 1:size(records,1) loop
-      Modelica.Utilities.Streams.print(EvaluationLibrary.Utilities.Functions.FormatRow(runId,records[i],csv),path);
+      Modelica.Utilities.Streams.print(
+        EvaluationLibrary.Utilities.Functions.FormatRow(runId,records[i],csv),target);
     end for;
-    if not console then Modelica.Utilities.Streams.close(path); end if;
+    if not console then
+      Modelica.Utilities.Streams.close(path);
+      assert(Modelica.Utilities.Files.exist(path),
+        "WriteRows could not confirm the requested output file: "+path);
+    end if;
     written:=true;
+  end if;
+
+  if logToConsole then
+    action:=if skippedExisting then "Export skipped: destination already exists"
+      elseif console then "Console result set generated"
+      elseif exists then "Result file overwritten" else "Result file created";
+    logged:=EvaluationLibrary.Utilities.Internal.LogCompletion(
+      action,formatName,
+      if console then "terminal (stdout)" else Modelica.Utilities.Files.fullPathName(path),
+      runId,resultSetId,size(records,1),simulationTime,
+      if skippedExisting then "SKIPPED" else "SUCCESS");
   end if;
   annotation(Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={

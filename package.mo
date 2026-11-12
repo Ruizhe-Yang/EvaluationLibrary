@@ -9,5 +9,5 @@ package EvaluationLibrary "Read-only metrics, explicit evidence qualification an
         Line(points={{4.6,23.92},{4.6,10.12}}, color={64,64,64}, thickness=0.65, pattern=LinePattern.Solid, arrow={Arrow.Filled,Arrow.Filled}),
         Line(points={{22.5,-43},{34.28,-55.4},{57.22,-25.64}}, color={75,138,73}, thickness=1.5, pattern=LinePattern.Solid)
       }),
-    uses(Modelica(version="4.0.0")), version="0.3.0", Documentation(info="<html><p>Read-only metrics, explicit evidence qualification and structured result reporting.</p></html>"));
+    uses(Modelica(version="4.0.0")), version="0.3.1", Documentation(info="<html><p>Read-only metrics, explicit evidence qualification and structured result reporting.</p></html>"));
 end EvaluationLibrary;

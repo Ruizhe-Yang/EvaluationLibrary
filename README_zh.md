@@ -6,7 +6,7 @@
 
 [English](README.md) · **简体中文**
 
-[![Source version 0.3.0](https://img.shields.io/badge/source-v0.3.0-5453a4)](package.mo)
+[![Source version 0.3.1](https://img.shields.io/badge/source-v0.3.1-5453a4)](package.mo)
 [![Modelica Standard Library 4.0.0](https://img.shields.io/badge/MSL-4.0.0-536478)](package.mo)
 
 ## 项目目的
@@ -20,10 +20,10 @@ EvaluationLibrary 将观测到的仿真信号转化为数值指标和显式需�
 | 基本信息 | 当前源码 |
 | :--- | :--- |
 | Modelica 根包 | `EvaluationLibrary` |
-| 包版本 | **0.3.0**，见 [package.mo](package.mo) |
+| 包版本 | **0.3.1**，见 [package.mo](package.mo) |
 | 声明的库依赖 | Modelica Standard Library **4.0.0** |
-| 示例定义 | **10 个**，其中 1 个存在下文说明的打包依赖缺口 |
-| 文档核对基线 | [`88ec735`](https://github.com/Ruizhe-Yang/EvaluationLibrary/commit/88ec73514a431f777d761f29b9b970dbf1dee6a7)，2026 年 11 月 12 日 |
+| 示例定义 | **10 个**，包括结构化结果导出示例 |
+| 源码与文档核对日期 | **2026 年 11 月 12 日**；复现时须记录实际 Git 提交号 |
 
 ## 证据语义
 
@@ -51,13 +51,20 @@ EvaluationLibrary 将观测到的仿真信号转化为数值指标和显式需�
 | [Requirements](Requirements) | 边界、持续时间、截止时限与带有效性信息的合取判定 |
 | [Comparison](Comparison) | 配对改进量、通道一致性与二分类标签统计 |
 | [Frequency](Frequency) | 有限 DFT、指定频率幅相、谐波畸变与峰值衰减 |
+| [Results](Results) | 结果表、判定汇总以及一次性 CSV、文本和控制台输出 |
 | [Utilities](Utilities) | 证据资格判断、类型化连接器、记录、数值和格式化辅助函数 |
 | [Examples](Examples) | 带有显式观测窗口的连接式示例 |
 | [UsersGuide](UsersGuide) | 建模工具内的信息页面 |
 
 ## 当前源码状态
 
-**打包缺口。** [package.order](package.order) 与[模型目录](model-catalog.csv)声明了 `Results` 包，但本次核对的 Git 仓库中不存在该目录。因此，[`ResultAggregationAndFiles`](Examples/ResultAggregationAndFiles.mo) 中的结果表、聚合输出和文件导出工作流存在未解析的类依赖。目录中的 `Results.*` 条目目前不能视为已交付实现。使用该工作流或声称整个库检查通过前，需要先解决该打包缺口。上表仅描述仓库中实际存在的包。
+`Results` 包现已包含结果表、判定聚合、一次性 CSV/TXT 文件写出和控制台输出。此前 [`ResultAggregationAndFiles`](Examples/ResultAggregationAndFiles.mo) 的缺包问题已在源码层面处理。旧目录中其他未随源码提供的 `Results.*` 条目已从目录移除，不再冒充可用模型。**当前编辑环境未执行 OpenModelica 编译或仿真，新增工作流仍需在目标工具中实测。**
+
+### 输出完成日志（v0.3.1）
+
+结果最终完成时，导出模块**只记录一次**，不会在每个仿真时间步重复打印。文件关闭且确认存在后才输出成功记录，内容包括本机当地时间、仿真时刻、文件格式、绝对路径、运行标识、结果集标识和记录数。控制台输出写明 `terminal (stdout)`；内存结果写明对应变量位置。
+
+默认策略为 `RejectExisting`：同名文件已存在时打印 `SKIPPED`，而不是成功。需要覆盖时设置 `writePolicy=EvaluationLibrary.Utilities.Types.WritePolicy.Overwrite`。输出目录须事先存在，默认文件名为 `runId_resultSetId.csv` 或 `.txt`。
 
 ## 快速开始
 
@@ -66,19 +73,14 @@ git clone https://github.com/Ruizhe-Yang/EvaluationLibrary.git
 cd EvaluationLibrary
 ```
 
-加载 **Modelica 4.0.0**，打开根目录 `package.mo`，并结合上述打包说明检查加载和翻译诊断。核心指标可以从 `EvaluationLibrary.Examples.AnalyticStatistics` 入手，该示例未引用缺失的 `Results` 包。其声明仿真范围为 **0–2.1 s**，容差为 **1e-6**。
+加载 **Modelica 4.0.0** 并打开根目录 `package.mo`。核心指标可以从 `EvaluationLibrary.Examples.AnalyticStatistics` 入手，该示例不依赖文件导出组件。其声明仿真范围为 **0–2.1 s**，容差为 **1e-6**。
 
-如果加载时报告缺少 `Results` 条目，应先补齐缺失的源码包再尝试仿真。以下脚本给出核心示例的预定 OpenModelica 入口，不表示当前仓库已经通过整个库的加载或翻译检查：
+下面是供读者执行的 OpenModelica 命令，**本次编辑未实际执行**：
 
 ```modelica
 loadModel(Modelica, {"4.0.0"});
 loadFile("package.mo");
-getErrorString();
-```
-
-只有包加载成功（`loadFile` 返回 `true`）后才继续：
-
-```modelica
+checkModel(EvaluationLibrary.Examples.AnalyticStatistics);
 simulate(EvaluationLibrary.Examples.AnalyticStatistics,
   startTime=0, stopTime=2.1, numberOfIntervals=500, tolerance=1e-6);
 getErrorString();
@@ -99,7 +101,11 @@ getErrorString();
 | [HarmonicMeasurements](Examples/HarmonicMeasurements.mo) | 有限相干采样窗口可以说明什么？ | `spectrum.amplitude`、`fundamentalValue`、`distortion.thd` | 2.1 s |
 | [DecayMeasurement](Examples/DecayMeasurement.mo) | 有效正峰值如何衰减？ | `decay.peakCount`、`decay.ratio`、`decay.logarithmicDecrement` | 3.1 s |
 | [IncompleteWindow](Examples/IncompleteWindow.mo) | 在指定终点之前结束仿真如何影响证据？ | `noWitness.dataStatus`、`.verdict`；`withWitness.everViolated` | 1 s |
-| [ResultAggregationAndFiles](Examples/ResultAggregationAndFiles.mo) | 计划提供的结构化结果与输出工作流 | **当前受缺失的 `Results` 包阻塞** | 2.1 s |
+| [ResultAggregationAndFiles](Examples/ResultAggregationAndFiles.mo) | 结构化结果、汇总和文件输出 | v0.3.1 已补回入口，尚未重新实测 | 2.1 s |
+
+### 导出日志验证
+
+在仓库根目录运行 [OpenModelica 检查脚本](Resources/Scripts/export_smoke.mos)，查看命令台中的 `SUCCESS` 日志，以及 `demo_csv.csv`、`demo_text.txt` 的绝对路径。保留文件重复执行可观察 `SKIPPED`，或主动选择 `Overwrite`。这是待执行的验证脚本，不代表本次已完成仿真验证。
 
 ## 科研使用建议
 
@@ -107,11 +113,11 @@ getErrorString();
 
 比较实验需要保证单位、窗口和物理含义一致。[`Response.SettlingTime`](Response/SettlingTime.mo) 在完整窗口结束时，结合规定的驻留时间确认最后一次进入误差带的时刻。[`Response.RepeatedResponse`](Response/RepeatedResponse.mo) 使用有限容量的先进先出队列，并区分超时、未匹配响应和因观测结束而删失的请求。报告结果时应保留这些差别。
 
-引用软件时，请注明 **EvaluationLibrary，版本 0.3.0**、仓库地址和使用的提交。[更新记录](CHANGELOG.md)与[提交历史](https://github.com/Ruizhe-Yang/EvaluationLibrary/commits/main/)可支持维护和复现。
+引用软件时，请注明 **EvaluationLibrary，版本 0.3.1**、仓库地址和使用的提交。[更新记录](CHANGELOG.md)与[提交历史](https://github.com/Ruizhe-Yang/EvaluationLibrary/commits/main/)可支持维护和复现。
 
 ## 适用范围与假设
 
-评价依赖于提供的信号、信号有效性和选定观测条件。结果不能独立证明本体模型保真度，也不构成物理系统认证。频域分析受有限采样网格与窗口设置影响；事件配对具有明确的队列和记录容量。当前打包缺口限制了结果导出工作流。用于研究实验前，应在目标 Modelica 工具中复现选定示例及相应数值预期。
+评价依赖于提供的信号、信号有效性和选定观测条件。结果不能独立证明本体模型保真度，也不构成物理系统认证。频域分析受有限采样网格与窗口设置影响；事件配对具有明确的队列和记录容量。新增导出模块仍需在实际 Modelica 工具中编译和仿真核验。用于研究实验前，应在目标 Modelica 工具中复现选定示例及相应数值预期。
 
 ## 许可证与贡献
 
