@@ -1,0 +1,17 @@
+ConditionOccupancy
+EventIntervals
+FallTime
+FirstOccurrence
+MovingAverage
+OccurrenceCount
+OvershootUndershoot
+RecoveryTime
+RepeatedResponse
+ResponseDelay
+RiseFallTime
+RiseTime
+SampleHistory
+SettlingTime
+SteadyStateError
+TrackingError
+ViolationDuration
