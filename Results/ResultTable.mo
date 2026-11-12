@@ -1,6 +1,5 @@
 within EvaluationLibrary.Results;
 block ResultTable "Collect qualified metrics in an inspectable result table"
-  extends Modelica.Icons.Block;
   parameter Integer n(min=1)=1;
   parameter String runId="run";
   parameter String resultSetId="table";
@@ -15,9 +14,9 @@ block ResultTable "Collect qualified metrics in an inspectable result table"
   parameter Modelica.Units.SI.Time samplePeriod[n]=fill(0,n);
   parameter EvaluationLibrary.Utilities.Types.EvidenceKind evidenceKind[n]=
     fill(EvaluationLibrary.Utilities.Types.EvidenceKind.Derived,n);
-  EvaluationLibrary.Utilities.Interfaces.MetricInput u[n]
+  EvaluationLibrary.Utilities.Interfaces.MetricInput u[n] 
     annotation(Placement(transformation(extent={{-110,-10},{-90,10}})));
-  EvaluationLibrary.Utilities.Interfaces.MetricOutput rows[n]
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput rows[n] 
     annotation(Placement(transformation(extent={{90,-10},{110,10}})));
   output EvaluationLibrary.Utilities.Types.MetricResult records[n];
   output Boolean allComplete;
@@ -61,5 +60,34 @@ algorithm
       logged:=false;
     end if;
   end when;
-  annotation(Documentation(info="<html><p>Pass-through typed result table with record metadata. On completion, emits one terminal log (not a file). observedDuration is not present on the metric connector, so the corresponding record field is zero and must not be interpreted as measured duration.</p></html>"));
+  annotation(Icon(coordinateSystem(extent={{-100,-100},{100,100}},
+grid={2,2}),graphics = {Rectangle(origin={0,0},
+lineColor={64,64,64},
+fillColor={255,255,255},
+fillPattern=FillPattern.Solid,
+lineThickness=0.5,
+extent={{-90,-85},{90,85}}), Rectangle(origin={0,3.5},
+lineColor={108,88,49},
+fillColor={255,215,136},
+fillPattern=FillPattern.Solid,
+lineThickness=0.5,
+extent={{-57,-45.5},{57,45.5}}), Line(origin={0,0},
+points={{-57,20},{57,20}},
+color={108,88,49},
+thickness=0.5), Line(origin={0,0},
+points={{-57,-11},{57,-11}},
+color={108,88,49},
+thickness=0.5), Line(origin={0,0},
+points={{-20,-42},{-20,49}},
+color={108,88,49},
+thickness=0.5), Text(origin={0,-62.5},
+lineColor={64,64,64},
+extent={{-65,12.5},{65,-12.5}},
+textString="table",
+textColor={64,64,64}), Text(origin={0,140},
+lineColor={0,0,255},
+extent={{-150,15},{150,-15}},
+textString="%name",
+textColor={0,0,255})}),
+    Documentation(info="<html><p>Pass-through typed result table with record metadata. On completion, emits one terminal log (not a file). observedDuration is not present on the metric connector, so the corresponding record field is zero and must not be interpreted as measured duration.</p></html>"));
 end ResultTable;

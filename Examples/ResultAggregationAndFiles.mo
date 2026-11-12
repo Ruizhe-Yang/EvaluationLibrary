@@ -13,8 +13,12 @@ model ResultAggregationAndFiles "Route three structured results through a table,
   EvaluationLibrary.Results.ConsoleWriter console(n=3,windowStop=fill(2,3),metricId={"passing","violating","invalid"},requirementVersion=fill("1.0",3),runId="demo",resultSetId="console") annotation(Placement(transformation(origin={198,-121},extent={{-18,-18},{18,18}},rotation=0)));
 equation
   connect(inputSignal.y,passLimit.u) annotation(Line(points={{-294.6,82},{-289.6,82},{-289.6,133.96666},{-227,133.96666}},color={0,0,127}));
-  connect(inputSignal.y,failLimit.u) annotation(Line(points={{-294.6,82},{-289.6,82},{-289.6,3.96666},{-227,3.96666}},color={0,0,127}));
-  connect(inputSignal.y,badData.u) annotation(Line(points={{-294.6,82},{-289.6,82},{-289.6,-126.03334},{-227,-126.03334}},color={0,0,127}));
+  connect(inputSignal.y,failLimit.u) annotation(Line(origin={0,0},
+points={{-294.6,82},{-289.6,82},{-289.6,3.96667},{-227,3.96667}},
+color={0,0,127}),__MWORKS(BlockSystem(NamedSignal)));
+  connect(inputSignal.y,badData.u) annotation(Line(origin={0,0},
+points={{-294.6,82},{-289.6,82},{-289.6,-126.033},{-227,-126.033}},
+color={0,0,127}),__MWORKS(BlockSystem(NamedSignal)));
   connect(qualified.y,badData.valid) annotation(Line(points={{-294.6,-130},{-210,-130},{-210,-108},{-210,-113}},color={255,0,255}));
   connect(passLimit.result,table.u[1]) annotation(Line(points={{-193,141.9},{-142,141.9},{-142,0},{-91,0}},color={62,85,140}));
   connect(failLimit.result,table.u[2]) annotation(Line(points={{-193,11.9},{-142,11.9},{-142,0},{-91,0}},color={62,85,140}));
@@ -27,7 +31,9 @@ equation
   connect(table.rows[2],csv.u[2]) annotation(Line(points={{-53,0},{63.5,0},{63.5,79},{180,79}},color={62,85,140}));
   connect(table.rows[2],text.u[2]) annotation(Line(points={{-53,0},{63.5,0},{63.5,-20},{180,-20}},color={62,85,140}));
   connect(table.rows[2],console.u[2]) annotation(Line(points={{-53,0},{63.5,0},{63.5,-121},{180,-121}},color={62,85,140}));
-  connect(table.rows[3],aggregate.u[3]) annotation(Line(points={{-53,0},{-5.5,0},{-5.5,173},{42,173}},color={62,85,140}));
+  connect(table.rows[3],aggregate.u[3]) annotation(Line(origin={0,0},
+points={{-53,0},{-5.5,0},{-5.5,173},{42,173}},
+color={62,85,140}),__MWORKS(BlockSystem(NamedSignal)));
   connect(table.rows[3],csv.u[3]) annotation(Line(points={{-53,0},{63.5,0},{63.5,79},{180,79}},color={62,85,140}));
   connect(table.rows[3],text.u[3]) annotation(Line(points={{-53,0},{63.5,0},{63.5,-20},{180,-20}},color={62,85,140}));
   connect(table.rows[3],console.u[3]) annotation(Line(points={{-53,0},{63.5,0},{63.5,-121},{180,-121}},color={62,85,140}));
