@@ -13,3 +13,5 @@ LESSONS = {
     'UncertaintyLibrary': uncertainty,
     'EvaluationLibrary': evaluation,
 }
+from refinements import apply
+apply(LESSONS, TITLES)
