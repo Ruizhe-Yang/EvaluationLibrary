@@ -1,5 +1,5 @@
 within EvaluationLibrary.Utilities.Internal;
-block SampledEvidence "均匀采样半开窗及完整性证据"
+block SampledEvidence "Half-open uniform sample coverage and latched invalidity"
   parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive window start, s";
   parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive window end, s";
   parameter Boolean applicable = true "Whether the analysis applies";
@@ -14,18 +14,24 @@ block SampledEvidence "均匀采样半开窗及完整性证据"
   parameter Integer minimumSamples(min=1) = 2 "Minimum valid observations";
   Modelica.Blocks.Interfaces.IntegerOutput validSamples(start=0,fixed=true) "Accepted observations" annotation(Placement(transformation(extent={{94,-30},{106,-18}}), iconTransformation(extent={{94,-30},{106,-18}})));
 
-  output Boolean takeTick;
+  output Boolean takeTick "Take tick";
+  output Integer receivedSamples(start=0,fixed=true) "All observed scheduled ticks, including invalid samples";
+  output Modelica.Units.SI.Time observedDuration "Observed half-open window duration";
+  output Modelica.Units.SI.Time validDuration "Duration of valid input; sampled qualification still uses validSamples";
 protected
+  Boolean validNow "Current valid portion of the observation window";
+  discrete Real validElapsed(start=0,fixed=true) "Completed valid segment duration";
+  discrete Real validEnteredAt(start=0,fixed=true) "Start of the current valid segment";
 
-  parameter Modelica.Units.SI.Time simulationStart(fixed=false);
-  Boolean invalidSeen;
-  Boolean sufficient;
+  parameter Modelica.Units.SI.Time simulationStart(fixed=false) "Observed simulation initialization time";
+  Boolean invalidSeen "Invalid seen";
+  Boolean sufficient "Sufficient";
 
-  final parameter Modelica.Units.SI.Time firstSample = windowStart+sampleOffset;
-  final parameter Real tickSpan = (windowEnd-firstSample)/samplePeriod;
+  final parameter Modelica.Units.SI.Time firstSample = windowStart+sampleOffset "First scheduled uniform observation time";
+  final parameter Real tickSpan = (windowEnd-firstSample)/samplePeriod "Number of scheduled grid intervals";
   final parameter Integer expected = if tickSpan <= 0 then 0 else
-    max(1,integer(ceil(tickSpan-8*Modelica.Constants.eps*max(1,abs(tickSpan)))));
-  discrete Boolean badSample(start=false,fixed=true);
+    max(1,integer(ceil(tickSpan-8*Modelica.Constants.eps*max(1,abs(tickSpan))))) "Declared expected value or sample count";
+  discrete Boolean badSample(start=false,fixed=true) "Bad sample";
 
 initial equation
   simulationStart = time;
@@ -34,8 +40,16 @@ initial equation
   assert(samplePeriod > 0 and sampleOffset >= 0 and sampleOffset < samplePeriod and minimumSamples >= 1,
     "Invalid sampling grid.");
 equation
+  observedDuration=if applicable then max(0,min(time,windowEnd)-max(simulationStart,windowStart)) else 0;
+  validNow=inWindow and dataOK;
+  when {initial(),change(validNow)} then
+    validElapsed=if initial() then 0 elseif pre(validNow) then pre(validElapsed)+time-pre(validEnteredAt) else pre(validElapsed);
+    validEnteredAt=if validNow and (initial() or not pre(validNow)) then time else pre(validEnteredAt);
+  end when;
+  validDuration=validElapsed+(if validNow then time-validEnteredAt else 0);
   takeTick = applicable and expected > 0 and noEvent(time < firstSample+(expected-0.5)*samplePeriod);
   when sample(firstSample,samplePeriod) then
+    receivedSamples = pre(receivedSamples)+(if takeTick then 1 else 0);
     badSample = pre(badSample) or (takeTick and not dataOK);
     validSamples = pre(validSamples)+(if takeTick and dataOK then 1 else 0);
   end when;
@@ -52,43 +66,25 @@ equation
     Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={
         Rectangle(extent={{-90,-85},{90,85}}, lineColor={64,64,64}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
-        Rectangle(extent={{-51,-27},{51,39}}, lineColor={128,128,128}, fillColor={245,245,245}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
-        Line(points={{-42,-27},{-42,-3.32659}}, color={128,128,128}, thickness=0.6, pattern=LinePattern.Solid),
-        Line(points={{-21,-27},{-21,-8.16368}}, color={128,128,128}, thickness=0.6, pattern=LinePattern.Solid),
-        Line(points={{0,-27},{0,6}}, color={128,128,128}, thickness=0.6, pattern=LinePattern.Solid),
-        Line(points={{21,-27},{21,20.1637}}, color={128,128,128}, thickness=0.6, pattern=LinePattern.Solid),
-        Line(points={{42,-27},{42,15.3266}}, color={128,128,128}, thickness=0.6, pattern=LinePattern.Solid),
-        Ellipse(extent={{-45,-6.32659},{-39,-0.326594}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4),
-        Ellipse(extent={{-24,-11.1637},{-18,-5.16368}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4),
-        Ellipse(extent={{-3,3},{3,9}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4),
-        Ellipse(extent={{18,17.1637},{24,23.1637}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4),
-        Ellipse(extent={{39,12.3266},{45,18.3266}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4),
-        Line(points={{22.5,-38},{30.48,-46.4},{46.02,-26.24}}, color={75,138,73}, thickness=1.5, pattern=LinePattern.Solid),
-        Text(extent={{-65,-50},{65,-75}}, textString="n", textColor={64,64,64}, fontSize=0),
+        Line(points={{-57,44},{57,44}}, color={128,128,128}, thickness=0.7, pattern=LinePattern.Solid),
+        Ellipse(extent={{-61,40},{-53,48}}, lineColor={64,64,64}, fillColor={64,64,64}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.8),
+        Ellipse(extent={{53,40},{61,48}}, lineColor={64,64,64}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.8),
+        Line(points={{-57,32},{-57,73}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Dash),
+        Line(points={{57,32},{57,73}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Dash),
+        Line(points={{-57,-18},{57,-18}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Solid),
+        Line(points={{-57,25},{-57,-18}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Solid),
+        Ellipse(extent={{-61,4},{-53,12}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.8),
+        Line(points={{-28,25},{-28,-18}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Solid),
+        Ellipse(extent={{-32,4},{-24,12}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.8),
+        Line(points={{1,25},{1,-18}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Solid),
+        Ellipse(extent={{-3,4},{5,12}}, lineColor={0,0,127}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.8),
+        Line(points={{30,25},{30,-18}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Solid),
+        Ellipse(extent={{26,4},{34,12}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.8),
+        Line(points={{57,25},{57,-18}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Solid),
+        Ellipse(extent={{53,4},{61,12}}, lineColor={0,0,127}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.8),
+        Text(extent={{-54,-38},{54,-70}}, textString="n / N", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),
-    Documentation(info="<html>
-<p>均匀采样半开窗及完整性证据</p>
-<p><b>行为</b> 均匀采样半开窗及完整性证据。</p>
-<p><b>最小用法</b> 由本库组件按源码中的参数和接口装配。</p>
-<p><b>适用边界</b> 实现细节随本库版本演进。</p>
-<p>参数的类型、默认值和取值见下列声明。</p>
-<ul>
-<li><code>Modelica.Units.SI.Time windowStart = 0 \"Inclusive window start, s\"</code></li>
-<li><code>Modelica.Units.SI.Time windowEnd = 5 \"Exclusive window end, s\"</code></li>
-<li><code>Boolean applicable = true \"Whether the analysis applies\"</code></li>
-<li><code>Modelica.Units.SI.Time samplePeriod(min=Modelica.Constants.small) = 0.02 \"Sampling interval, s\"</code></li>
-<li><code>Modelica.Units.SI.Time sampleOffset(min=0) = 0 \"First tick offset from windowStart, s\"</code></li>
-<li><code>Integer minimumSamples(min=1) = 2 \"Minimum valid observations\"</code></li>
-</ul>
-<p>接口及方向</p>
-<ul>
-<li><code>input Boolean dataOK \"Already checked input validity and numerical domain\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.BooleanOutput inWindow \"Current point lies in applicable window\"</code></li>
-<li><code>output EvaluationLibrary.Utilities.Types.DataStatus dataState \"Collection and data validity state\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.IntegerOutput validSamples(start=0,fixed=true) \"Accepted observations\"</code></li>
-<li><code>output Boolean takeTick</code></li>
-</ul>
-</html>"));
+    Documentation(info="<html><p>Half-open uniform sample coverage and latched invalidity. Inputs retain the physical units or logical meaning stated by their declarations. Domain assertions and explicit availability flags are part of the contract.</p></html>"));
 end SampledEvidence;

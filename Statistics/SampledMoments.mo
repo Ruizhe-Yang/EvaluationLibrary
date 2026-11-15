@@ -1,5 +1,14 @@
 within EvaluationLibrary.Statistics;
-block SampledMoments "以稳定的递推计算离散均值和方差"
+block SampledMoments "Stable one-pass sampled mean and population variance"
+  parameter String metricId=getInstanceName() "Stable identity of this retained specialist";
+  parameter String requirementId="" "Requirement identity, when configured";
+  parameter String requirementVersion="" "Interpreted requirement version";
+  parameter String unitName="1" "Engineering unit of the reported specialist value";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete specialist result" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
+  Boolean terminalSeen(start=false,fixed=true) "Terminal seen";
+  discrete Boolean qualifiedViolation(start=false,fixed=true) "Qualified violation";
+  discrete Real qualifiedViolationTime(start=0,fixed=true) "Qualified violation time";
+  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Result status";
   parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive window start, s";
   parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive window end, s";
   parameter Boolean applicable = true "Whether the analysis applies";
@@ -13,18 +22,38 @@ block SampledMoments "以稳定的递推计算离散均值和方差"
   Modelica.Blocks.Interfaces.BooleanOutput inWindow "Current point lies in applicable window" annotation(Placement(transformation(extent={{94,76},{106,88}}), iconTransformation(extent={{94,76},{106,88}})));
   output EvaluationLibrary.Utilities.Types.DataStatus dataState "Collection and data validity state";
   Modelica.Blocks.Interfaces.IntegerOutput validSamples "Accepted observations" annotation(Placement(transformation(extent={{94,35},{106,47}}), iconTransformation(extent={{94,35},{106,47}})));
-  Modelica.Blocks.Interfaces.RealInput u "均匀时钟上的待统计轨迹" annotation(Placement(transformation(extent={{-106,-30},{-94,-18}}), iconTransformation(extent={{-106,-30},{-94,-18}})));
-  Modelica.Blocks.Interfaces.RealOutput mean(start=0,fixed=true) "样本均值" annotation(Placement(transformation(extent={{94,-6},{106,6}}), iconTransformation(extent={{94,-6},{106,6}})));
-  Modelica.Blocks.Interfaces.RealOutput variance "总体形式方差 M2/N" annotation(Placement(transformation(extent={{94,-47},{106,-35}}), iconTransformation(extent={{94,-47},{106,-35}})));
-  Modelica.Blocks.Interfaces.RealOutput rms "样本均方根" annotation(Placement(transformation(extent={{94,-88},{106,-76}}), iconTransformation(extent={{94,-88},{106,-76}})));
+  Modelica.Blocks.Interfaces.RealInput u "Observed real signal in the declared engineering unit" annotation(Placement(transformation(extent={{-106,-30},{-94,-18}}), iconTransformation(extent={{-106,-30},{-94,-18}})));
+  Modelica.Blocks.Interfaces.RealOutput mean(start=0,fixed=true) "Mean" annotation(Placement(transformation(extent={{94,-6},{106,6}}), iconTransformation(extent={{94,-6},{106,6}})));
+  Modelica.Blocks.Interfaces.RealOutput variance "Variance" annotation(Placement(transformation(extent={{94,-47},{106,-35}}), iconTransformation(extent={{94,-47},{106,-35}})));
+  Modelica.Blocks.Interfaces.RealOutput rms "Rms" annotation(Placement(transformation(extent={{94,-88},{106,-76}}), iconTransformation(extent={{94,-88},{106,-76}})));
 protected
-  EvaluationLibrary.Utilities.Internal.SampledEvidence evidence(windowStart=windowStart,windowEnd=windowEnd,applicable=applicable,samplePeriod=samplePeriod,sampleOffset=sampleOffset,minimumSamples=minimumSamples);
+  EvaluationLibrary.Utilities.Internal.SampledEvidence evidence(windowStart=windowStart,windowEnd=windowEnd,applicable=applicable,samplePeriod=samplePeriod,sampleOffset=sampleOffset,minimumSamples=minimumSamples) "Evidence";
   Boolean dataOK "Validity combined with the metric data domain";
 
-  final parameter Modelica.Units.SI.Time firstSample = windowStart+sampleOffset;
+  final parameter Modelica.Units.SI.Time firstSample = windowStart+sampleOffset "First scheduled uniform observation time";
   Boolean takeTick "Only the scheduled half-open grid is accepted";
-  discrete Real m2(start=0,fixed=true);
+  discrete Real m2(start=0,fixed=true) "M2";
 equation
+  when terminal() then terminalSeen=true; end when;
+  resultStatus=if (dataState)==EvaluationLibrary.Utilities.Types.DataStatus.PENDING and terminalSeen then EvaluationLibrary.Utilities.Types.DataStatus.INCOMPLETE else (dataState);
+  when {initial(),false} then
+    qualifiedViolation=pre(qualifiedViolation) or false;
+    qualifiedViolationTime=if not pre(qualifiedViolation) and false then time else pre(qualifiedViolationTime);
+  end when;
+  result.metricId=metricId; result.requirementId=requirementId; result.requirementVersion=requirementVersion; result.unit=unitName;
+  result.value=mean; result.valueAvailable=(validSamples>0) and resultStatus<>EvaluationLibrary.Utilities.Types.DataStatus.INVALID and resultStatus<>EvaluationLibrary.Utilities.Types.DataStatus.NOT_APPLICABLE;
+  result.dataStatus=Integer(resultStatus);
+  result.verdict=Integer(EvaluationLibrary.Utilities.Functions.ToVerdict(resultStatus,qualifiedViolation,false));
+  result.complete=time>=windowEnd or terminalSeen;
+  result.windowStart=windowStart; result.windowStop=windowEnd;
+  result.observedDuration=evidence.observedDuration;
+  result.validDuration=evidence.validDuration;
+  result.expectedSamples=EvaluationLibrary.Utilities.Functions.SampleCount(windowStart,windowEnd,windowStart+sampleOffset,samplePeriod); result.receivedSamples=evidence.receivedSamples; result.validSamples=validSamples;
+  result.everViolated=qualifiedViolation; result.firstViolationTime=qualifiedViolationTime;
+  result.samplePeriod=samplePeriod; result.evidenceKind=2;
+  result.message=EvaluationLibrary.Utilities.Functions.EvidenceMessage(result.dataStatus,result.verdict,result.valueAvailable)+"; retained specialist; no unsupplied duration or count inferred";
+  result.eventCountsAvailable=false; result.eventCount=0; result.matchedCount=0; result.timedOutCount=0; result.censoredCount=0;
+  result.levelAvailable=false; result.level=0; result.level0Upper=0; result.level1Upper=0;
   evidence.dataOK = dataOK;
   dataState = evidence.dataState;
   inWindow = evidence.inWindow;
@@ -46,42 +75,22 @@ equation
     Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={
         Rectangle(extent={{-90,-85},{90,85}}, lineColor={64,64,64}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
-        Text(extent={{-58,54},{-3,-18}}, textString="Σ", textColor={0,0,127}, fontSize=0),
-        Ellipse(extent={{13,21},{21,29}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4),
-        Ellipse(extent={{34,1},{42,9}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4),
-        Ellipse(extent={{53,32},{61,40}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4),
-        Line(points={{17,-26},{17,25}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Solid),
-        Line(points={{38,-26},{38,5}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Solid),
-        Line(points={{57,-26},{57,36}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Solid),
-        Text(extent={{-65,-50},{65,-75}}, textString="µ, σ²", textColor={64,64,64}, fontSize=0),
+        Line(points={{-65,7},{-26,7}}, color={128,128,128}, thickness=0.6, pattern=LinePattern.Solid),
+        Ellipse(extent={{-61.1,3.9},{-54.9,10.1}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.45),
+        Ellipse(extent={{-46.1,3.9},{-39.9,10.1}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.45),
+        Ellipse(extent={{-31.1,3.9},{-24.9,10.1}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.45),
+        Line(points={{-18,7},{-6,7},{9,41}}, color={128,128,128}, thickness=0.6, pattern=LinePattern.Solid, arrow={Arrow.None,Arrow.Filled}),
+        Rectangle(extent={{15,54},{67,28}}, lineColor={128,128,128}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.55, radius=0),
+        Text(extent={{19,52},{63,30}}, textString="μ", textColor={0,0,127}, fontSize=0),
+        Line(points={{-18,7},{-6,7},{9,7}}, color={128,128,128}, thickness=0.6, pattern=LinePattern.Solid, arrow={Arrow.None,Arrow.Filled}),
+        Rectangle(extent={{15,20},{67,-6}}, lineColor={128,128,128}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.55, radius=0),
+        Text(extent={{19,18},{63,-4}}, textString="σ²", textColor={0,0,127}, fontSize=0),
+        Line(points={{-18,7},{-6,7},{9,-27}}, color={128,128,128}, thickness=0.6, pattern=LinePattern.Solid, arrow={Arrow.None,Arrow.Filled}),
+        Rectangle(extent={{15,-14},{67,-40}}, lineColor={128,128,128}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.55, radius=0),
+        Text(extent={{19,-16},{63,-38}}, textString="RMS", textColor={0,0,127}, fontSize=0),
+        Text(extent={{-65,-50},{65,-75}}, textString="1-pass", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}}, preserveAspectRatio=true), graphics={Text(extent={{-96,99},{96,88}}, textColor={73,53,132}, textString="SampledMoments")}),
-    Documentation(info="<html><p><b>Purpose</b> 以稳定的递推计算离散均值和方差</p><p><b>Interfaces</b> Modelica.Blocks.Interfaces.BooleanInput valid \"Host-provided input validity\"; Modelica.Blocks.Interfaces.BooleanOutput inWindow \"Current point lies in applicable window\"; output EvaluationLibrary.Utilities.Types.DataStatus dataState \"Collection and data validity state\"; Modelica.Blocks.Interfaces.IntegerOutput validSamples \"Accepted observations\"; Modelica.Blocks.Interfaces.RealInput u \"均匀时钟上的待统计轨迹\"; Modelica.Blocks.Interfaces.RealOutput mean(start=0,fixed=true) \"样本均值\"; Modelica.Blocks.Interfaces.RealOutput variance \"总体形式方差 M2/N\"; Modelica.Blocks.Interfaces.RealOutput rms \"样本均方根\"</p><p><b>Parameters</b> parameter Modelica.Units.SI.Time windowStart = 0 \"Inclusive window start, s\"; parameter Modelica.Units.SI.Time windowEnd = 5 \"Exclusive window end, s\"; parameter Boolean applicable = true \"Whether the analysis applies\"; parameter Modelica.Units.SI.Time samplePeriod(min=Modelica.Constants.small) = 0.02 \"Sampling interval, s\"; parameter Modelica.Units.SI.Time sampleOffset(min=0) = 0 \"First tick offset from windowStart, s\"; parameter Integer minimumSamples(min=1) = 2 \"Minimum valid observations\"</p><p><b>Behavior</b> 以稳定的递推计算离散均值和方差</p><p><b>Initialization</b> Use the declared initial values and host state modifiers.</p><p><b>Activation and recovery</b> Not applicable.</p><p><b>Limitations</b> Use the declared parameter range. The catalog identifies simulation coverage.</p><p><b>Observables</b> Inspect the declared output variables.</p><p><b>Evidence kind</b> Inspect applicability, coverage and validity before interpreting the result.</p><p><b>Example</b> <a href=\"modelica://EvaluationLibrary.Examples.AnalyticStatistics\">EvaluationLibrary.Examples.AnalyticStatistics</a></p>
-<p>以稳定的递推计算离散均值和方差</p>
-<p>专业分类为 StatisticalAnalysis.DescriptiveStatistics。</p>
-<p>接口与方向</p>
-<ul>
-<li><code>Modelica.Blocks.Interfaces.BooleanInput valid \"Host-provided input validity\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.BooleanOutput inWindow \"Current point lies in applicable window\"</code></li>
-<li><code>output EvaluationLibrary.Utilities.Types.DataStatus dataState \"Collection and data validity state\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.IntegerOutput validSamples \"Accepted observations\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.RealInput u \"均匀时钟上的待统计轨迹\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.RealOutput mean(start=0,fixed=true) \"样本均值\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.RealOutput variance \"总体形式方差 M2/N\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.RealOutput rms \"样本均方根\"</code></li>
-</ul>
-<p>参数、类型、默认值及约束</p>
-<ul>
-<li><code>Modelica.Units.SI.Time windowStart = 0 \"Inclusive window start, s\"</code></li>
-<li><code>Modelica.Units.SI.Time windowEnd = 5 \"Exclusive window end, s\"</code></li>
-<li><code>Boolean applicable = true \"Whether the analysis applies\"</code></li>
-<li><code>Modelica.Units.SI.Time samplePeriod(min=Modelica.Constants.small) = 0.02 \"Sampling interval, s\"</code></li>
-<li><code>Modelica.Units.SI.Time sampleOffset(min=0) = 0 \"First tick offset from windowStart, s\"</code></li>
-<li><code>Integer minimumSamples(min=1) = 2 \"Minimum valid observations\"</code></li>
-</ul>
-<p><b>时序与基准行为</b> 逐有效样本更新均值和二阶矩，初始填零，结束保持。</p>
-<p><b>最小用法</b> 用于等间隔采样轨迹，需要至少 minimumSamples 个样本。 <a href=\"modelica://EvaluationLibrary.Examples.AnalyticStatistics\">ElectricalPowerQualityEvaluation</a> 展示同域接线。</p>
-<p><b>适用边界</b> 总体形式等权，采样统计不可替代连续时间均值。</p>
-</html>"));
+    Documentation(info="<html><p>Use stable one-pass updates for mean and the centered second moment. Population variance divides by the accepted count; rms combines that variance and mean. minimumSamples defaults to 2. Outputs retain their own defined/qualification flags; no degrees-of-freedom correction is implied.</p><p>The observation defaults to [0,5) s, with a 0.02 s uniform period and zero offset unless declared otherwise. The period is positive, offset is nonnegative and smaller than the period, and minimumSamples must be positive. The exclusive stop is not sampled. Invalid scheduled observations latch INVALID; insufficient or missing scheduled observations give INCOMPLETE. Received samples, valid samples, observed time and valid time are distinct; sampled evidence does not assert strict behavior between ticks.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
 end SampledMoments;

@@ -1,45 +1,45 @@
 within EvaluationLibrary.Utilities.Internal;
 block WindowEvidence "Qualify the first requested window and track data coverage independently"
-parameter EvaluationLibrary.Utilities.Types.WindowMode windowMode=EvaluationLibrary.Utilities.Types.WindowMode.FixedTime;
-  parameter Modelica.Units.SI.Time windowStart=0;
-  parameter Modelica.Units.SI.Time windowStop=5;
-  parameter Boolean applicable=true;
-  parameter Boolean useValidInput=false;
+parameter EvaluationLibrary.Utilities.Types.WindowMode windowMode=EvaluationLibrary.Utilities.Types.WindowMode.FixedTime "Fixed-time or first externally gated observation window";
+  parameter Modelica.Units.SI.Time windowStart=0 "Inclusive observation start in seconds";
+  parameter Modelica.Units.SI.Time windowStop=5 "Exclusive observation stop in seconds";
+  parameter Boolean applicable=true "Whether this evaluation applies";
+  parameter Boolean useValidInput=false "Expose the host-provided validity connector";
 
-  parameter Modelica.Units.SI.Time samplePeriod(min=0)=0.01;
-  parameter Modelica.Units.SI.Time sampleStart=0;
+  parameter Modelica.Units.SI.Time samplePeriod(min=0)=0.01 "Positive uniform sampling interval in seconds";
+  parameter Modelica.Units.SI.Time sampleStart=0 "Uniform sample grid origin in seconds";
 
-  parameter Boolean sampled=false;
-    Modelica.Blocks.Interfaces.BooleanInput rawWindow annotation(Placement(transformation(origin={-100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,70},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanInput dataOK annotation(Placement(transformation(origin={-100,0},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,0},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanInput overflow annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
-  output Boolean inWindow;
-  output Boolean complete;
-  output Boolean unexpectedWindow;
-  output Boolean tick;
-  output Boolean sampleInWindow;
-  output Modelica.Units.SI.Time actualStart;
-  output Modelica.Units.SI.Time actualStop;
-  output Modelica.Units.SI.Time observedDuration(start=0,fixed=true);
-  output Modelica.Units.SI.Time validDuration(start=0,fixed=true);
-  output Integer expectedSamples;
-  output Integer receivedSamples(start=0,fixed=true);
-  output Integer validSamples(start=0,fixed=true);
-  output EvaluationLibrary.Utilities.Types.DataStatus status;
+  parameter Boolean sampled=false "Use the declared sample grid rather than continuous event checking";
+    Modelica.Blocks.Interfaces.BooleanInput rawWindow "Raw window" annotation(Placement(transformation(origin={-100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanInput dataOK "Data ok" annotation(Placement(transformation(origin={-100,0},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,0},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanInput overflow "Overflow" annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
+  output Boolean inWindow "In window";
+  output Boolean complete "Collection has closed; inspect DataStatus before assuming full evidence";
+  output Boolean unexpectedWindow "Unexpected window";
+  output Boolean tick "Tick";
+  output Boolean sampleInWindow "Sample in window";
+  output Modelica.Units.SI.Time actualStart "Actual start";
+  output Modelica.Units.SI.Time actualStop "Actual stop";
+  output Modelica.Units.SI.Time observedDuration(start=0,fixed=true) "Observed duration";
+  output Modelica.Units.SI.Time validDuration(start=0,fixed=true) "Valid duration";
+  output Integer expectedSamples "Expected samples";
+  output Integer receivedSamples(start=0,fixed=true) "Received samples";
+  output Integer validSamples(start=0,fixed=true) "Valid samples";
+  output EvaluationLibrary.Utilities.Types.DataStatus status "Status";
 protected
-  discrete Boolean entered(start=false,fixed=true);
-  discrete Boolean closed(start=false,fixed=true);
-  discrete Boolean secondWindow(start=false,fixed=true);
-  discrete Boolean terminalSeen(start=false,fixed=true);
-  discrete Boolean invalidSeen(start=false,fixed=true);
-  discrete Modelica.Units.SI.Time startObserved(start=0,fixed=true);
-  discrete Modelica.Units.SI.Time stopObserved(start=0,fixed=true);
-  Boolean windowClosed;
-  Boolean invalidNow;
-  Boolean fullCoverage;
-  Integer gridIndex;
-  Integer firstIndex;
-  Integer stopIndex;
+  discrete Boolean entered(start=false,fixed=true) "Entered";
+  discrete Boolean closed(start=false,fixed=true) "Closed";
+  discrete Boolean secondWindow(start=false,fixed=true) "Second window";
+  discrete Boolean terminalSeen(start=false,fixed=true) "Terminal seen";
+  discrete Boolean invalidSeen(start=false,fixed=true) "Invalid seen";
+  discrete Modelica.Units.SI.Time startObserved(start=0,fixed=true) "Start observed";
+  discrete Modelica.Units.SI.Time stopObserved(start=0,fixed=true) "Stop observed";
+  Boolean windowClosed "Window closed";
+  Boolean invalidNow "Invalid now";
+  Boolean fullCoverage "Full coverage";
+  Integer gridIndex "Grid index";
+  Integer firstIndex "First index";
+  Integer stopIndex "Stop index";
 initial equation
   assert(windowStop>=windowStart,"Reversed evaluation window.");
   assert(samplePeriod>0,"Sample period must be positive.");
@@ -81,16 +81,15 @@ equation
   annotation(Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={
         Rectangle(extent={{-90,-85},{90,85}}, lineColor={64,64,64}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
-        Rectangle(extent={{-49,-24},{49,37}}, lineColor={128,128,128}, fillColor={245,245,245}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
-        Line(points={{-49,51},{-49,-37}}, color={128,128,128}, thickness=0.6, pattern=LinePattern.Solid),
-        Line(points={{49,51},{49,-37}}, color={128,128,128}, thickness=0.6, pattern=LinePattern.Solid),
-        Ellipse(extent={{-42.5,5.5},{-35.5,12.5}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4),
-        Ellipse(extent={{-16.5,5.5},{-9.5,12.5}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4),
-        Ellipse(extent={{9.5,5.5},{16.5,12.5}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4),
-        Ellipse(extent={{35.5,5.5},{42.5,12.5}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4),
-        Line(points={{20.75,-28},{29.3,-37},{45.95,-15.4}}, color={75,138,73}, thickness=1.5, pattern=LinePattern.Solid),
-        Text(extent={{-65,-50},{65,-75}}, textString="[t0, t1)", textColor={64,64,64}, fontSize=0),
+        Line(points={{-67,47},{-43,47},{-43,68},{-25,68},{-25,47},{-8,47}}, color={64,64,64}, thickness=0.8, pattern=LinePattern.Solid),
+        Line(points={{0,69},{0,33}}, color={128,128,128}, thickness=0.7, pattern=LinePattern.Solid, arrow={Arrow.None,Arrow.Filled}),
+        Line(points={{-56,5},{-56,29},{56,29},{56,5}}, color={64,64,64}, thickness=0.8, pattern=LinePattern.Solid),
+        Ellipse(extent={{-60,25},{-52,33}}, lineColor={64,64,64}, fillColor={64,64,64}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.8),
+        Ellipse(extent={{52,25},{60,33}}, lineColor={64,64,64}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.8),
+        Line(points={{-56,-8},{56,-8}}, color={128,128,128}, thickness=3, pattern=LinePattern.Solid),
+        Line(points={{-56,-28},{16,-28}}, color={0,0,127}, thickness=3, pattern=LinePattern.Solid),
+        Text(extent={{-65,-52},{65,-79}}, textString="window", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
-    Documentation(info="<html><p><b>Purpose</b> Qualify the first requested window and track data coverage independently.</p><p><b>Interfaces</b> Modelica.Blocks.Interfaces.BooleanInput rawWindow; Modelica.Blocks.Interfaces.BooleanInput dataOK; Modelica.Blocks.Interfaces.BooleanInput overflow; output Boolean inWindow; output Boolean complete; output Boolean unexpectedWindow; output Boolean tick; output Boolean sampleInWindow; output Modelica.Units.SI.Time actualStart; output Modelica.Units.SI.Time actualStop; output Modelica.Units.SI.Time observedDuration(start=0,fixed=true); output Modelica.Units.SI.Time validDuration(start=0,fixed=true); output Integer expectedSamples; output Integer receivedSamples(start=0,fixed=true); output Integer validSamples(start=0,fixed=true); output EvaluationLibrary.Utilities.Types.DataStatus status</p><p><b>Parameters</b> parameter EvaluationLibrary.Utilities.Types.WindowMode windowMode=EvaluationLibrary.Utilities.Types.WindowMode.FixedTime; parameter Modelica.Units.SI.Time windowStart=0; parameter Modelica.Units.SI.Time windowStop=5; parameter Boolean applicable=true; parameter Boolean useValidInput=false; parameter Modelica.Units.SI.Time samplePeriod(min=0)=0.01; parameter Modelica.Units.SI.Time sampleStart=0; parameter Boolean sampled=false</p><p><b>Behavior</b> A fixed window is half-open. An external window records its first open and close. A later opening marks unexpectedWindow.</p><p><b>Initialization</b> The declared start values and initialization equations apply.</p><p><b>Activation and recovery</b> Not applicable.</p><p><b>Limitations</b> An early terminal event closes evidence as incomplete. Invalid samples never turn into complete coverage.</p><p><b>Observables</b> inWindow, complete, unexpectedWindow, tick, sampleInWindow, expectedSamples, receivedSamples, validSamples</p><p><b>Evidence kind</b> Interpret the result with the declared window and sampling rule. Incomplete or invalid evidence must not be interpreted as satisfied.</p></html>"));
+    Documentation(info="<html><p>First observation window and separate validity coverage. Inputs retain the physical units or logical meaning stated by their declarations. Domain assertions and explicit availability flags are part of the contract.</p></html>"));
 end WindowEvidence;

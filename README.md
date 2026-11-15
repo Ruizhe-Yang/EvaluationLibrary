@@ -1,130 +1,43 @@
-![EvaluationLibrary: observation windows, qualified metrics and explicit requirement verdicts](docs/assets/overview.svg)
+# EvaluationLibrary 0.4.0
 
-# EvaluationLibrary
+Read-only Modelica evaluation, explicit evidence qualification and directly connected results. Only Modelica Standard Library 4.0.0 is required by the library and its nine examples.
 
-**Modelica metrics and requirement assessment with explicit evidence qualification.**
+## Start with a complete example
 
-**English** · [简体中文](README_zh.md)
+Load EvaluationLibrary/package.mo, open Examples.MultiSignalAssessment and simulate its declared experiment. All excitation, observation and reporting are internal. The console prints each channel, its evidence status, its verdict, and an explicit overall verdict once. No external ports need binding.
 
-<!-- learning-guide:start -->
-> **[Detailed bilingual learning and usage guide](docs/LearningGuide.html)** — Chinese and British English in one offline-readable HTML file, with a complete component reference and every example explained. Download the HTML and open it in a browser to use language switching and search.
-<!-- learning-guide:end -->
+For a host model, instantiate Statistics.SignalAssessment, connect the observed real-signal array to assessment.u, and connect assessment.y to Results.ConsoleWriter.u with the same n. Supply each signal's unit, interpretation and inclusive bounds once at the evaluator. WrappedAngleDifference performs the radian normalization internally. Ordinary positions use Difference or SignedValue. No result-field assignments, ResultTable, TimeMean counter relay or CSVWriter are required.
 
-[![Source version 0.3.1](https://img.shields.io/badge/source-v0.3.1-5453a4)](package.mo)
-[![Modelica Standard Library 4.0.0](https://img.shields.io/badge/MSL-4.0.0-536478)](package.mo)
+Response.EventAssessment handles related event tasks on one window. Its request and actual response are different inputs. Select Occurrence, RequestResponse or Recovery per task. Optional useRecoverySignal performs the recovery-band test internally; recovery requires uninterrupted valid dwell. An undemanded barrier is NOT_APPLICABLE. Event counts, matches, timeouts and censored requests travel with the result.
 
-[Purpose](#purpose) · [Evidence semantics](#evidence-semantics) · [Quick start](#quick-start) · [Examples](#examples) · [Research use](#research-use)
+## Result and evidence contract
 
-## Purpose
+MetricInput, MetricOutput and MetricResult are the existing interfaces expanded to one canonical complete contract. The 30 fields include stable identities, requirement version, value and availability, unit, DataStatus, Verdict, observation window, durations, sample coverage, violation witness, evidence kind, explanation, completion, event counts with an explicit availability flag and optional engineering severity. Connector status fields retain the fixed integer enumeration ordinals from 0.3.1 for standard fixed-size connector portability; the record uses the corresponding enumerations. No parallel legacy record, expandable connector or executable expression string is used.
 
-EvaluationLibrary turns observed simulation signals into numerical measures and explicit requirement verdicts. It covers time and sample statistics, transient response, bounds and deadlines, paired comparisons, classification labels and selected frequency-domain measures.
+DataStatus is PENDING, COMPLETE, INCOMPLETE, INVALID or NOT_APPLICABLE. Verdict is UNDECIDED, SATISFIED, VIOLATED, INVALID or NOT_APPLICABLE. A complete statistic need not be a satisfied requirement. Unavailable numbers are guarded by availability flags and printed as N/A, never treated as zero evidence. A recorded violation remains inspectable even if later evidence becomes invalid.
 
-Its central concern is the relationship between a result and the evidence supporting it. A numerical value, a completed observation window, an invalid measurement and a witnessed violation are different facts. The library represents those facts separately so that an attractive curve or an available number is not automatically interpreted as a satisfied requirement.
+The half-open window is [start,stop). Sampled extrema are explicitly sampled extrema, not strict continuous extrema. SignalAssessment can use continuous event inequalities for bound violations and continuous violation duration while sharing one sampling grid for reported extrema. Its result message states that distinction. With sampled=true, duration is unavailable and only ticks decide bounds. Optional Level 0/1/2 uses sampled absolute interpreted peaks; equality belongs to the lower level. These are case-specific engineering categories, not certification levels.
 
-The blocks read signals from the host model. They can therefore be connected as an observation layer for comparative experiments, response characterisation and simulation-based requirement assessment.
+Required INVALID dominates VIOLATED, then UNDECIDED. All required applicable items must be SATISFIED to obtain SATISFIED. Non-applicable items are retained and excluded; no applicable items gives NOT_APPLICABLE. Invalid or incomplete data cannot supply an aggregate satisfied verdict even if an inconsistent upstream verdict code says otherwise.
 
-| At a glance | Current source |
-| :--- | :--- |
-| Modelica package | `EvaluationLibrary` |
-| Package version | **0.3.1**, declared in [package.mo](package.mo) |
-| Declared library dependency | Modelica Standard Library **4.0.0** |
-| Example definitions | **10**, including structured result reporting |
-| Documentation and source review | **12 November 2026**; see the Git revision of the version used |
+## Event boundaries
 
-## Evidence semantics
+At the same instant requests enter the FIFO before responses; equality with a deadline is accepted inside the observation window. Responses cannot satisfy more than one request. Older expired requests are removed first. A deadline at the exclusive window stop lacks in-window follow-up and is censored. Queue overflow is INVALID. Invalid gaps invalidate history and flush pending requests; they cannot splice two valid intervals into one response or dwell proof. Recovery stops and restarts its dwell when the band or validity is lost.
 
-The standard evaluators share a typed [`MetricOutput`](Utilities/Interfaces/MetricOutput.mo) containing the numerical value and its availability, data status, verdict, violation witness, first violation time, valid duration, sample counts and finalisation flag. The [`MetricResult`](Utilities/Types/MetricResult.mo) record additionally defines identifiers, units, window metadata and requirement-version fields.
+## Retained specialist capability
 
-| Question | Source representation |
-| :--- | :--- |
-| Is a numerical value available? | `valueAvailable` |
-| What is the observation's coverage and validity? | `DataStatus`: `PENDING`, `COMPLETE`, `INCOMPLETE`, `INVALID`, `NOT_APPLICABLE` |
-| What does the requirement conclude? | `Verdict`: `UNDECIDED`, `SATISFIED`, `VIOLATED`, `INVALID`, `NOT_APPLICABLE` |
-| Was a qualified violation observed? | `everViolated` and `firstViolationTime` |
-| Has collection been finalised? | `complete`; inspect `dataStatus` separately for coverage |
+Continuous and sampled moments, sampled extrema, paired and finite multi-run comparisons, diagnostic TP/TN/FP/FN with denominator flags, finite DFT and tone response, specialized crossing and response metrics, and explicit finite-set summaries remain available. LabelPerformance.y directly reports all eight counts/ratios; its scalar result remains the accuracy result using the same protocol. Specialist scalar outputs are retained; complete result outputs remove the need for record-builder models. Finite candidate summaries are not probabilities or continuous-domain global worst-case proofs.
 
-[`WindowEvidence`](Utilities/Internal/WindowEvidence.mo) supports a fixed half-open interval `[start, stop)` or the first externally supplied window. A subsequent external window is flagged as invalid. Normal simulation termination can finalise an incompletely observed interval: **`complete=true` does not imply `dataStatus=COMPLETE`**.
+## Output and files
 
-The [verdict function](Utilities/Functions/ToVerdict.mo) gives invalid data precedence over a requirement verdict while retaining any previously recorded violation witness. An incomplete window without such a witness remains undecided. A fully observed numerical metric is also not automatically a satisfied requirement; a criterion is needed to make that judgement.
+ConsoleWriter can be used alone. Results follow declaration order and include every child. CSVWriter and TextWriter are optional and consume the same complete results. Existing files are preserved by default; choose Overwrite explicitly to replace a file. The output directory must already exist. written and skippedExisting describe export only and never alter safety. MSL file-system errors may terminate a simulation; there is no portable exception recovery in this library, and a failed export is not evidence of satisfaction.
 
-## Model organisation
+## Verification and portability
 
-| Package | Available source functionality |
-| :--- | :--- |
-| [Signals](Signals) | Paired errors, wrapped angular error, finite differences and validity gating |
-| [Statistics](Statistics) | Continuous integrals and duration-weighted statistics; statistics on an explicit sample grid |
-| [Response](Response) | Rise/fall time, terminal settling, event counts, recovery and request–response timing |
-| [Requirements](Requirements) | Bounds, persistence, deadlines and conjunction of qualified results |
-| [Comparison](Comparison) | Paired improvement, channel consistency and binary label statistics |
-| [Frequency](Frequency) | Finite DFT, selected-frequency amplitude/phase, harmonic distortion and peak decay |
-| [Results](Results) | Qualified result tables, aggregate verdicts and one-shot CSV, text and console outputs |
-| [Utilities](Utilities) | Evidence qualification, typed connectors, records, numerical and formatting helpers |
-| [Examples](Examples) | Connected demonstrations with explicit observation windows |
-| [UsersGuide](UsersGuide) | In-tool information pages |
+See verification for the baseline inventory, nine example checks, 28 boundary/negative scenarios, numerical 0.3.1 regressions and an Icon/Diagram overview for every Results class. Actual compiler: OpenModelica 1.27.1 in command-line mode, standard Modelica 3.4. No GUI was started. OpenModelica 1.25.x and MWorks execution were not performed; their runtime compatibility is unverified, despite avoiding dynamic connectors and nonstandard language constructs. No Python or extra runtime is required to run an Example. Optional verification automation uses Python's standard library and an explicitly supplied compiler.
 
-## Current source status
+See migration.md for breaking result-interface changes, removed redundant wrappers and the replacement example paths. This library observes signals; it does not inject faults, control protection, run external simulations, calculate accident probabilities, perform Monte Carlo analysis or automatically complete FMEA/FTA/STPA reasoning.
 
-`Results` now includes the result table, verdict aggregation, one-shot CSV/TXT writers and a console writer. The earlier missing-package blocker for [`ResultAggregationAndFiles`](Examples/ResultAggregationAndFiles.mo) has been addressed at source level. Other `Results.*` classes appearing in the previous catalogue were not present in the source snapshot and have been removed from the catalogue rather than represented as supported components. **The newly restored workflow has not yet been compiled or simulated in OpenModelica in this editing environment.**
+Retained scalar response specialists are not duplicate aliases: RepeatedResponse exposes a bounded individual-delay history and externally gated windows; ResponseDelay measures only the first accepted pair; RecoveryTime is a non-requirement elapsed-time measurement with external gating. The integrated EventAssessment provides shared fixed-window task summaries. Their distinct interpretations and retained numerical definitions are preserved.
 
-### Completion logs (v0.3.1)
-
-When a result set is finalised, the output components print an audit message **once**, not on every simulation time step. Successful file exports are logged after closing and verifying the file. Messages contain the host-local timestamp, simulation time, output type, absolute destination path, run ID, result-set ID and record count. Console outputs identify `terminal (stdout)`; in-memory result tables and aggregated verdicts identify their Modelica variable, not a fictitious file.
-
-The default file policy is `RejectExisting`: an existing target produces a `SKIPPED` message, and no success is claimed. Set `writePolicy=EvaluationLibrary.Utilities.Types.WritePolicy.Overwrite` when replacement is intentional. The `outputDirectory` must already exist; file names default to `runId_resultSetId.csv` or `.txt`.
-
-## Quick start
-
-```bash
-git clone https://github.com/Ruizhe-Yang/EvaluationLibrary.git
-cd EvaluationLibrary
-```
-
-Load **Modelica 4.0.0** and open the root `package.mo`. For the core metric implementation, start with `EvaluationLibrary.Examples.AnalyticStatistics`, which is independent of the export components. Its experiment is **0–2.1 s**, with tolerance **1e-6**.
-
-From the repository directory, run the following OpenModelica commands to check the package and simulate the analytical example (the commands are provided for reproduction and have **not** been executed in this edit):
-
-```modelica
-loadModel(Modelica, {"4.0.0"});
-loadFile("package.mo");
-checkModel(EvaluationLibrary.Examples.AnalyticStatistics);
-simulate(EvaluationLibrary.Examples.AnalyticStatistics,
-  startTime=0, stopTime=2.1, numberOfIntervals=500, tolerance=1e-6);
-getErrorString();
-```
-
-The input is `u=time`, and the observation window is `[0, 2)`. Analytical reference values are **2** for the integral, **1** for the time mean, **2/√3** for the time RMS and **1/3** for the time variance. The sample grid is `0, 0.01, …, 1.99`: its **200** observations have a sample mean of **0.995**. These reference values follow from the example definition; they are not new execution results. Inspect the matching availability and data-status fields after the window closes.
-
-## Examples
-
-| Example | Research question | Useful outputs | Declared stop |
-| :--- | :--- | :--- | ---: |
-| [AnalyticStatistics](Examples/AnalyticStatistics.mo) | How do continuous and sampled statistics differ? | `integralValue`, `timeMeanValue`, `sampleMeanValue`, `sampleMean.nValid` | 2.1 s |
-| [BoundsAndValidWitness](Examples/BoundsAndValidWitness.mo) | What happens when invalid data follow a valid violation? | Evaluator `dataStatus`, `verdict`, `everViolated`, `firstViolationTime` | 2.1 s |
-| [FirstOrderResponse](Examples/FirstOrderResponse.mo) | How are rise and terminal settling times measured? | `riseSeconds`, `settlingSeconds`, `settling.settled` | 4.1 s |
-| [RepeatedRequestResponse](Examples/RepeatedRequestResponse.mo) | Which requests match, time out or become censored? | `paired.matched`, `.timedOut`, `.censored`, `.unmatchedResponse` | 4.1 s |
-| [PairedPerformance](Examples/PairedPerformance.mo) | How is improvement computed for comparable trajectories? | `absoluteChange`, `relativeChange` | 2.1 s |
-| [ConsistencyAndLabels](Examples/ConsistencyAndLabels.mo) | How do numeric consistency and label accuracy differ? | `spread`, `accuracy`, `labels.TP`, `.TN`, `.FP`, `.FN` | 4.1 s |
-| [HarmonicMeasurements](Examples/HarmonicMeasurements.mo) | What can a finite coherent sample window reveal? | `spectrum.amplitude`, `fundamentalValue`, `distortion.thd` | 2.1 s |
-| [DecayMeasurement](Examples/DecayMeasurement.mo) | How do qualified positive peaks attenuate? | `decay.peakCount`, `decay.ratio`, `decay.logarithmicDecrement` | 3.1 s |
-| [IncompleteWindow](Examples/IncompleteWindow.mo) | How does termination before the requested end affect evidence? | `noWitness.dataStatus`, `.verdict`; `withWitness.everViolated` | 1 s |
-| [ResultAggregationAndFiles](Examples/ResultAggregationAndFiles.mo) | Intended structured result and writer workflow | `Results` entry points restored in v0.3.1; execution not yet re-verified | 2.1 s |
-
-### Export smoke test
-
-Run [the supplied OpenModelica script](Resources/Scripts/export_smoke.mos) from the repository root to exercise the three result writers. Inspect the terminal for the `SUCCESS` messages and the absolute paths of `demo_csv.csv` and `demo_text.txt`. Run it again without deleting the files to inspect `SKIPPED` behaviour, or configure `Overwrite`. The script is provided for verification; its outcome has not been asserted here.
-
-## Research use
-
-Choose the observation window and criterion before interpreting a result. Record signal definitions and units, requirement thresholds and versions, validity rules, sampling period, host-model revision, solver settings and the library commit. Preserve both the verdict and its supporting qualification fields.
-
-For comparisons, establish matching units, windows and interpretations. For settling time, [`Response.SettlingTime`](Response/SettlingTime.mo) confirms the final band entry only at the end of a fully observed window with the required dwell. For repeated responses, [`Response.RepeatedResponse`](Response/RepeatedResponse.mo) uses a finite FIFO queue and distinguishes timeouts, unmatched responses and requests censored by the end of observation. These distinctions should remain visible in reported results.
-
-When citing the software, identify **EvaluationLibrary, version 0.3.1**, the repository URL and the commit used. The [change log](CHANGELOG.md) and [commit history](https://github.com/Ruizhe-Yang/EvaluationLibrary/commits/main/) support maintenance and replication.
-
-## Scope and assumptions
-
-Assessment depends on the supplied signals, their validity and the chosen observation conditions. A result does not independently establish the fidelity of the host model or certify a physical system. Frequency analysis depends on the declared finite sampling grid and window; event pairing has explicit queue and record capacities. The newly restored export components still require independent tool-based verification. Reproduce the selected example and its numerical expectations in the intended Modelica tool before using it in an experiment.
-
-## Licence and contributions
-
-The repository contains the [GNU General Public License, version 3](LICENSE). For an issue or contribution, provide the version or commit, tool version, minimal model, observation-window settings, expected result and actual qualification fields. Evidence semantics, numerical reference cases and package completeness are valuable areas for improvement.
+Coverage-only verdict reconstruction is not used for retained requirements: undemanded tasks remain NOT_APPLICABLE, undefined denominators remain unresolved, and nonfinite evidence is INVALID. Requirements.Conjunction is removed in favor of the existing child-preserving VerdictAggregator.

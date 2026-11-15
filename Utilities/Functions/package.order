@@ -1,11 +1,14 @@
 Aggregate
+EvidenceMessage
 FormatRow
+FormatSummary
+QualifiedCode
 QuoteCSV
 SafeIdentifier
 SampleCount
 StatusFromCode
 StatusText
-ToVerdict
 Tone
+ToVerdict
 VerdictFromCode
 VerdictText

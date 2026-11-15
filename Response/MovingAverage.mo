@@ -1,5 +1,14 @@
 within EvaluationLibrary.Response;
-block MovingAverage "连续有效的完整滑窗平均值"
+block MovingAverage "Mean over a complete continuously valid trailing window"
+  parameter String metricId=getInstanceName() "Stable identity of this retained specialist";
+  parameter String requirementId="" "Requirement identity, when configured";
+  parameter String requirementVersion="" "Interpreted requirement version";
+  parameter String unitName="1" "Engineering unit of the reported specialist value";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete specialist result" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
+  Boolean terminalSeen(start=false,fixed=true) "Terminal seen";
+  discrete Boolean qualifiedViolation(start=false,fixed=true) "Qualified violation";
+  discrete Real qualifiedViolationTime(start=0,fixed=true) "Qualified violation time";
+  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Result status";
   parameter Modelica.Units.SI.Time length(min=Modelica.Constants.small) = 1 "Trailing window duration, s";
   parameter Modelica.Units.SI.Time coverageTolerance(min=0) = 1e-7 "Numerical integration tolerance, s";
   Modelica.Blocks.Interfaces.RealInput u "Signal" annotation(Placement(transformation(extent={{-106,18},{-94,30}}), iconTransformation(extent={{-106,18},{-94,30}})));
@@ -8,14 +17,34 @@ block MovingAverage "连续有效的完整滑窗平均值"
   Modelica.Blocks.Interfaces.BooleanOutput ready "A full valid duration is available" annotation(Placement(transformation(extent={{94,-6},{106,6}}), iconTransformation(extent={{94,-6},{106,6}})));
   Modelica.Blocks.Interfaces.RealOutput coveredDuration(unit="s") "Valid duration within the current window" annotation(Placement(transformation(extent={{94,-54},{106,-42}}), iconTransformation(extent={{94,-54},{106,-42}})));
 protected
-  Real integral(start=0,fixed=true);
-  Real duration(unit="s",start=0,fixed=true);
-  parameter Modelica.Units.SI.Time startTime(fixed=false);
-  Boolean dataOK;
+  Real integral(start=0,fixed=true) "Integral";
+  Real duration(unit="s",start=0,fixed=true) "Duration";
+  parameter Modelica.Units.SI.Time startTime(fixed=false) "First observation or stimulus time in seconds";
+  Boolean dataOK "Data ok";
 initial equation
   startTime = time;
   assert(length > 0 and coverageTolerance >= 0 and coverageTolerance < length, "Invalid moving window.");
 equation
+  when terminal() then terminalSeen=true; end when;
+  resultStatus=if (if ready then EvaluationLibrary.Utilities.Types.DataStatus.COMPLETE else EvaluationLibrary.Utilities.Types.DataStatus.PENDING)==EvaluationLibrary.Utilities.Types.DataStatus.PENDING and terminalSeen then EvaluationLibrary.Utilities.Types.DataStatus.INCOMPLETE else (if ready then EvaluationLibrary.Utilities.Types.DataStatus.COMPLETE else EvaluationLibrary.Utilities.Types.DataStatus.PENDING);
+  when {initial(),false} then
+    qualifiedViolation=pre(qualifiedViolation) or false;
+    qualifiedViolationTime=if not pre(qualifiedViolation) and false then time else pre(qualifiedViolationTime);
+  end when;
+  result.metricId=metricId; result.requirementId=requirementId; result.requirementVersion=requirementVersion; result.unit=unitName;
+  result.value=mean; result.valueAvailable=(ready) and resultStatus<>EvaluationLibrary.Utilities.Types.DataStatus.INVALID and resultStatus<>EvaluationLibrary.Utilities.Types.DataStatus.NOT_APPLICABLE;
+  result.dataStatus=Integer(resultStatus);
+  result.verdict=Integer(EvaluationLibrary.Utilities.Functions.ToVerdict(resultStatus,qualifiedViolation,false));
+  result.complete=terminalSeen;
+  result.windowStart=startTime; result.windowStop=time;
+  result.observedDuration=0;
+  result.validDuration=0;
+  result.expectedSamples=0; result.receivedSamples=0; result.validSamples=0;
+  result.everViolated=qualifiedViolation; result.firstViolationTime=qualifiedViolationTime;
+  result.samplePeriod=0; result.evidenceKind=4;
+  result.message=EvaluationLibrary.Utilities.Functions.EvidenceMessage(result.dataStatus,result.verdict,result.valueAvailable)+"; retained specialist; no unsupplied duration or count inferred";
+  result.eventCountsAvailable=false; result.eventCount=0; result.matchedCount=0; result.timedOutCount=0; result.censoredCount=0;
+  result.levelAvailable=false; result.level=0; result.level0Upper=0; result.level1Upper=0;
   dataOK = valid and noEvent(abs(u) < Modelica.Constants.inf);
   der(integral) = if dataOK then u else 0;
   der(duration) = if dataOK then 1 else 0;
@@ -26,33 +55,16 @@ equation
     Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={
         Rectangle(extent={{-90,-85},{90,85}}, lineColor={64,64,64}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
-        Line(points={{-62,55},{-62,-40},{65,-40}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Solid),
-        Rectangle(extent={{-10,-34},{53,47}}, lineColor={128,128,128}, fillColor={245,245,245}, fillPattern=FillPattern.Solid, pattern=LinePattern.Dash, lineThickness=0.5, radius=0),
-        Line(points={{-56,17},{-53.15,21.9939},{-50.3,25.8992},{-47.45,27.8646},{-44.6,27.4616},{-41.75,24.7782},{-38.9,20.3992},{-36.05,15.2792},{-33.2,10.5344},{-30.35,7.19893},{-27.5,6},{-24.65,7.19893},{-21.8,10.5344},{-18.95,15.2792},{-16.1,20.3992},{-13.25,24.7782},{-10.4,27.4616},{-7.55,27.8646},{-4.7,25.8992},{-1.85,21.9939},{1,17},{3.85,12.0061},{6.7,8.10081},{9.55,6.13543},{12.4,6.53838},{15.25,9.22183},{18.1,13.6008},{20.95,18.7208},{23.8,23.4656},{26.65,26.8011},{29.5,28},{32.35,26.8011},{35.2,23.4656},{38.05,18.7208},{40.9,13.6008},{43.75,9.22183},{46.6,6.53838},{49.45,6.13543},{52.3,8.10081},{55.15,12.0061},{58,17}}, color={128,128,128}, thickness=1.1, pattern=LinePattern.Solid),
-        Line(points={{-55,10},{-18,16},{15,19},{58,21}}, color={0,0,127}, thickness=1.3, pattern=LinePattern.Solid),
-        Line(points={{-1,-22},{43,-22}}, color={128,128,128}, thickness=0.7, pattern=LinePattern.Solid, arrow={Arrow.None,Arrow.Filled}),
+        Rectangle(extent={{-7,-32},{64,54}}, lineColor={128,128,128}, fillColor={245,245,245}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.35, radius=0),
+        Line(points={{-66,5},{-56,29},{-44,-9},{-30,38},{-17,8},{-2,22},{12,-9},{25,41},{40,16},{53,28},{64,1}}, color={128,128,128}, thickness=0.65, pattern=LinePattern.Solid),
+        Line(points={{-7,17},{64,17}}, color={0,0,127}, thickness=1.4, pattern=LinePattern.Solid),
+        Line(points={{64,-37},{64,61}}, color={64,64,64}, thickness=0.55, pattern=LinePattern.Solid),
+        Line(points={{-7,-41},{64,-41}}, color={64,64,64}, thickness=0.7, pattern=LinePattern.Solid, arrow={Arrow.Filled,Arrow.Filled}),
+        Line(points={{-7,-46},{-7,-36}}, color={64,64,64}, thickness=0.55, pattern=LinePattern.Solid),
+        Line(points={{64,-46},{64,-36}}, color={64,64,64}, thickness=0.55, pattern=LinePattern.Solid),
         Text(extent={{-65,-50},{65,-75}}, textString="mean(T)", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),
-    Documentation(info="<html><p><b>Purpose</b> 连续有效的完整滑窗平均值</p><p><b>Interfaces</b> Modelica.Blocks.Interfaces.RealInput u \"Signal\"; Modelica.Blocks.Interfaces.BooleanInput valid \"Input validity\"; Modelica.Blocks.Interfaces.RealOutput mean \"Trailing average, same unit as u\"; Modelica.Blocks.Interfaces.BooleanOutput ready \"A full valid duration is available\"; Modelica.Blocks.Interfaces.RealOutput coveredDuration(unit=\"s\") \"Valid duration within the current window\"</p><p><b>Parameters</b> parameter Modelica.Units.SI.Time length(min=Modelica.Constants.small) = 1 \"Trailing window duration, s\"; parameter Modelica.Units.SI.Time coverageTolerance(min=0) = 1e-7 \"Numerical integration tolerance, s\"</p><p><b>Behavior</b> 连续有效的完整滑窗平均值</p><p><b>Initialization</b> Use the declared initial values and host state modifiers.</p><p><b>Activation and recovery</b> Not applicable.</p><p><b>Limitations</b> Use the declared parameter range. The catalog identifies simulation coverage.</p><p><b>Observables</b> Inspect the declared output variables.</p><p><b>Evidence kind</b> Inspect applicability, coverage and validity before interpreting the result.</p><p><b>Example</b> <a href=\"modelica://EvaluationLibrary.Examples.FirstOrderResponse\">EvaluationLibrary.Examples.FirstOrderResponse</a></p>
-<p>连续有效的完整滑窗平均值</p>
-<p><b>行为</b> 按连续有效时间积分，等待一整窗且覆盖足够时输出均值。窗内有有效时长缺口时不发布。</p>
-<p><b>最小用法</b> 给缓慢变化的电压或温度设置 length，并读取 ready。</p>
-<p><b>适用边界</b> 积分差和时间容差是数值近似。零持续时间的无效瞬间没有积分权重。</p>
-<p>参数的类型、默认值和取值见下列声明。</p>
-<ul>
-<li><code>Modelica.Units.SI.Time length(min=Modelica.Constants.small) = 1 \"Trailing window duration, s\"</code></li>
-<li><code>Modelica.Units.SI.Time coverageTolerance(min=0) = 1e-7 \"Numerical integration tolerance, s\"</code></li>
-</ul>
-<p>接口及方向</p>
-<ul>
-<li><code>Modelica.Blocks.Interfaces.RealInput u \"Signal\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.BooleanInput valid \"Input validity\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.RealOutput mean \"Trailing average, same unit as u\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.BooleanOutput ready \"A full valid duration is available\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.RealOutput coveredDuration(unit=\"s\") \"Valid duration within the current window\"</code></li>
-</ul>
-<p><a href=\"modelica://EvaluationLibrary.Examples.AnalyticStatistics\">ElectricalPowerQualityEvaluation</a> 提供同域宿主参考。</p>
-</html>"));
+    Documentation(info="<html><p>Use delayed integrals to form the mean over the trailing length seconds, default 1 s. coveredDuration is valid time inside that interval; ready requires the full history and current validity. coverageTolerance defaults to 1e-7 s, is nonnegative and must be smaller than length. An invalid gap removes readiness until complete valid trailing coverage is restored. This rolling statistic does not declare a safety threshold.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
 end MovingAverage;

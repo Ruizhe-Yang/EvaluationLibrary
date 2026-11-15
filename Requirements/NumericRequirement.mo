@@ -1,6 +1,15 @@
 within EvaluationLibrary.Requirements;
-block NumericRequirement "按完整数值证据执行含等号的限值要求"
-  parameter EvaluationLibrary.Utilities.Types.NumericComparison comparison = EvaluationLibrary.Utilities.Types.NumericComparison.Inside;
+block NumericRequirement "Interpret a qualified scalar using explicit numeric bounds"
+  parameter String metricId=getInstanceName() "Stable identity of this retained specialist";
+  parameter String requirementId="" "Requirement identity, when configured";
+  parameter String requirementVersion="" "Interpreted requirement version";
+  parameter String unitName="1" "Engineering unit of the reported specialist value";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete specialist result" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
+  Boolean terminalSeen(start=false,fixed=true) "Terminal seen";
+  discrete Boolean qualifiedViolation(start=false,fixed=true) "Qualified violation";
+  discrete Real qualifiedViolationTime(start=0,fixed=true) "Qualified violation time";
+  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Result status";
+  parameter EvaluationLibrary.Utilities.Types.NumericComparison comparison = EvaluationLibrary.Utilities.Types.NumericComparison.Inside "Numeric bound interpretation";
   parameter Real lower = 0 "Inclusive lower limit";
   parameter Real upper = 1 "Inclusive upper limit";
   Modelica.Blocks.Interfaces.RealInput value "Numerical evidence in the units of the bounds" annotation(Placement(transformation(extent={{-106,18},{-94,30}}), iconTransformation(extent={{-106,18},{-94,30}})));
@@ -9,10 +18,33 @@ block NumericRequirement "按完整数值证据执行含等号的限值要求"
   Modelica.Blocks.Interfaces.RealOutput margin "Signed distance to applicable boundary" annotation(Placement(transformation(extent={{94,-6},{106,6}}), iconTransformation(extent={{94,-6},{106,6}})));
   output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement outcome";
 protected
-  Boolean finiteValue;
+  Boolean finiteValue "Finite value";
 initial equation
   assert(comparison <> EvaluationLibrary.Utilities.Types.NumericComparison.Inside or lower <= upper, "Inverted range.");
 equation
+  when terminal() then terminalSeen=true; end when;
+  resultStatus=if verdict==EvaluationLibrary.Utilities.Types.Verdict.INVALID then EvaluationLibrary.Utilities.Types.DataStatus.INVALID
+    elseif verdict==EvaluationLibrary.Utilities.Types.Verdict.NOT_APPLICABLE then EvaluationLibrary.Utilities.Types.DataStatus.NOT_APPLICABLE
+    elseif dataState==EvaluationLibrary.Utilities.Types.DataStatus.COMPLETE and verdict==EvaluationLibrary.Utilities.Types.Verdict.UNDECIDED then EvaluationLibrary.Utilities.Types.DataStatus.INCOMPLETE
+    elseif dataState==EvaluationLibrary.Utilities.Types.DataStatus.PENDING and terminalSeen then EvaluationLibrary.Utilities.Types.DataStatus.INCOMPLETE else dataState;
+  when {initial(),verdict==EvaluationLibrary.Utilities.Types.Verdict.VIOLATED} then
+    qualifiedViolation=pre(qualifiedViolation) or verdict==EvaluationLibrary.Utilities.Types.Verdict.VIOLATED;
+    qualifiedViolationTime=if not pre(qualifiedViolation) and verdict==EvaluationLibrary.Utilities.Types.Verdict.VIOLATED then time else pre(qualifiedViolationTime);
+  end when;
+  result.metricId=metricId; result.requirementId=requirementId; result.requirementVersion=requirementVersion; result.unit=unitName;
+  result.value=value; result.valueAvailable=(defined and finiteValue) and resultStatus<>EvaluationLibrary.Utilities.Types.DataStatus.INVALID and resultStatus<>EvaluationLibrary.Utilities.Types.DataStatus.NOT_APPLICABLE;
+  result.dataStatus=Integer(resultStatus);
+  result.verdict=EvaluationLibrary.Utilities.Functions.QualifiedCode(Integer(resultStatus),if qualifiedViolation then 3 else Integer(verdict));
+  result.complete=terminalSeen or result.dataStatus<>1;
+  result.windowStart=0; result.windowStop=0;
+  result.observedDuration=0;
+  result.validDuration=0;
+  result.expectedSamples=0; result.receivedSamples=0; result.validSamples=0;
+  result.everViolated=qualifiedViolation; result.firstViolationTime=qualifiedViolationTime;
+  result.samplePeriod=0; result.evidenceKind=4;
+  result.message=EvaluationLibrary.Utilities.Functions.EvidenceMessage(result.dataStatus,result.verdict,result.valueAvailable)+"; retained specialist; no unsupplied duration or count inferred";
+  result.eventCountsAvailable=false; result.eventCount=0; result.matchedCount=0; result.timedOutCount=0; result.censoredCount=0;
+  result.levelAvailable=false; result.level=0; result.level0Upper=0; result.level1Upper=0;
   finiteValue = noEvent(abs(value) < Modelica.Constants.inf);
   margin = if defined and finiteValue then
     (if comparison == EvaluationLibrary.Utilities.Types.NumericComparison.AtMost then upper-value elseif comparison == EvaluationLibrary.Utilities.Types.NumericComparison.AtLeast then value-lower
@@ -25,33 +57,17 @@ equation
     Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={
         Rectangle(extent={{-90,-85},{90,85}}, lineColor={64,64,64}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
-        Text(extent={{-59,48},{-13,-14}}, textString="x", textColor={0,0,127}, fontSize=0),
-        Text(extent={{-16,46},{18,-12}}, textString="≤", textColor={64,64,64}, fontSize=0),
-        Line(points={{37,47},{37,-12}}, color={128,128,128}, thickness=1.3, pattern=LinePattern.Solid),
-        Line(points={{-10.5,-31},{0.52,-42.6},{21.98,-14.76}}, color={75,138,73}, thickness=1.5, pattern=LinePattern.Solid),
-        Text(extent={{-65,-50},{65,-75}}, textString="criterion", textColor={64,64,64}, fontSize=0),
+        Line(points={{-65,5},{66,5}}, color={128,128,128}, thickness=0.65, pattern=LinePattern.Solid),
+        Rectangle(extent={{-38,-5},{34,15}}, lineColor={64,64,64}, fillColor={235,235,235}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
+        Line(points={{-38,-12},{-38,25}}, color={64,64,64}, thickness=0.75, pattern=LinePattern.Solid),
+        Line(points={{34,-12},{34,25}}, color={64,64,64}, thickness=0.75, pattern=LinePattern.Solid),
+        Ellipse(extent={{3.8,0.8},{12.2,9.2}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.55),
+        Text(extent={{-48,-17},{-26,-38}}, textString="L", textColor={64,64,64}, fontSize=0),
+        Text(extent={{23,-17},{45,-38}}, textString="U", textColor={64,64,64}, fontSize=0),
+        Text(extent={{-61,63},{61,37}}, textString="<=  >=  []", textColor={0,0,127}, fontSize=0),
+        Text(extent={{-65,-50},{65,-75}}, textString="qualified value", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),
-    Documentation(info="<html><p><b>Purpose</b> 按完整数值证据执行含等号的限值要求</p><p><b>Interfaces</b> Modelica.Blocks.Interfaces.RealInput value \"Numerical evidence in the units of the bounds\"; Modelica.Blocks.Interfaces.BooleanInput defined \"The metric value exists\"; input EvaluationLibrary.Utilities.Types.DataStatus dataState \"Evidence coverage and validity\"; Modelica.Blocks.Interfaces.RealOutput margin \"Signed distance to applicable boundary\"; output EvaluationLibrary.Utilities.Types.Verdict verdict \"Requirement outcome\"</p><p><b>Parameters</b> parameter EvaluationLibrary.Utilities.Types.NumericComparison comparison = EvaluationLibrary.Utilities.Types.NumericComparison.Inside; parameter Real lower = 0 \"Inclusive lower limit\"; parameter Real upper = 1 \"Inclusive upper limit\"</p><p><b>Behavior</b> 按完整数值证据执行含等号的限值要求</p><p><b>Initialization</b> Use the declared initial values and host state modifiers.</p><p><b>Activation and recovery</b> Not applicable.</p><p><b>Limitations</b> Use the declared parameter range. The catalog identifies simulation coverage.</p><p><b>Observables</b> Inspect the declared output variables.</p><p><b>Evidence kind</b> Inspect applicability, coverage and validity before interpreting the result.</p><p><b>Example</b> <a href=\"modelica://EvaluationLibrary.Examples.BoundsAndValidWitness\">EvaluationLibrary.Examples.BoundsAndValidWitness</a></p>
-<p>按完整数值证据执行含等号的限值要求</p>
-<p><b>行为</b> 等号满足要求，裕量为负表示违反。未提供值或证据不足时未决，失效与不适用分别传播。</p>
-<p><b>最小用法</b> 把有效的峰值或稳态误差及对应 dataState 接入，并设置同单位限值。</p>
-<p><b>适用边界</b> 使用上游证据，时间语义由上游指标定义。数值填零时必须检查 defined。</p>
-<p>参数的类型、默认值和取值见下列声明。</p>
-<ul>
-<li><code>EvaluationLibrary.Utilities.Types.NumericComparison comparison = EvaluationLibrary.Utilities.Types.NumericComparison.Inside</code></li>
-<li><code>Real lower = 0 \"Inclusive lower limit\"</code></li>
-<li><code>Real upper = 1 \"Inclusive upper limit\"</code></li>
-</ul>
-<p>接口及方向</p>
-<ul>
-<li><code>Modelica.Blocks.Interfaces.RealInput value \"Numerical evidence in the units of the bounds\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.BooleanInput defined \"The metric value exists\"</code></li>
-<li><code>input EvaluationLibrary.Utilities.Types.DataStatus dataState \"Evidence coverage and validity\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.RealOutput margin \"Signed distance to applicable boundary\"</code></li>
-<li><code>output EvaluationLibrary.Utilities.Types.Verdict verdict \"Requirement outcome\"</code></li>
-</ul>
-<p><a href=\"modelica://EvaluationLibrary.Examples.BoundsAndValidWitness\">IntegratedResultsReporting</a> 提供同域宿主参考。</p>
-</html>"));
+    Documentation(info="<html><p>Classify a supplied finite numerical value using the explicit NumericComparison mode and inclusive lower/upper bounds, default Inside and bounds zero and one. defined declares whether the numeric evidence exists; undefined evidence is unresolved rather than zero success. The input evidence state independently controls qualification and prevents an incomplete or invalid value from passing.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
 end NumericRequirement;

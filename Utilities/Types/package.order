@@ -1,7 +1,10 @@
+AssessmentDirection
 DataStatus
+EventMode
+EventRole
 EvidenceKind
 Grade
-LegacyMetricResult
+InputInterpretation
 MetricResult
 NumericComparison
 ReportFormat

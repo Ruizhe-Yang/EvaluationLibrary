@@ -4,15 +4,21 @@ extends EvaluationLibrary.Response.RepeatedResponse(final qualifyDeadline=true);
   annotation(Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={
         Rectangle(extent={{-90,-85},{90,85}}, lineColor={64,64,64}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
-        Line(points={{-67,4},{-44,4}}, color={128,128,128}, thickness=0.8, pattern=LinePattern.Solid, arrow={Arrow.None,Arrow.Filled}),
-        Line(points={{42,4},{66,4}}, color={0,0,127}, thickness=0.8, pattern=LinePattern.Solid, arrow={Arrow.None,Arrow.Filled}),
-        Rectangle(extent={{-41,-16},{-18,24}}, lineColor={0,0,127}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
-        Rectangle(extent={{-13,-16},{10,24}}, lineColor={128,128,128}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
-        Rectangle(extent={{15,-16},{38,24}}, lineColor={128,128,128}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
-        Line(points={{-38,43},{35,43}}, color={128,128,128}, thickness=0.65, pattern=LinePattern.Solid, arrow={Arrow.None,Arrow.Filled}),
-        Line(points={{33,59},{33,-43}}, color={191,0,0}, thickness=0.7, pattern=LinePattern.Dash),
-        Text(extent={{-65,-50},{65,-75}}, textString="deadline", textColor={64,64,64}, fontSize=0),
-        Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
+        Line(points={{-65,40},{-56,40},{-56,60},{-48,60},{-48,40},{-39,40},{-39,60},{-31,60},{-31,40}}, color={0,0,127}, thickness=0.9, pattern=LinePattern.Solid),
+        Line(points={{-20,49},{-5,49}}, color={64,64,64}, thickness=0.7, pattern=LinePattern.Solid, arrow={Arrow.None,Arrow.Filled}),
+        Text(extent={{4,62},{42,39}}, textString="req", textColor={128,128,128}, fontSize=0),
+        Rectangle(extent={{-44,-7},{-16,23}}, lineColor={0,0,127}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.65, radius=0),
+        Rectangle(extent={{-8,-7},{20,23}}, lineColor={0,0,127}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.65, radius=0),
+        Rectangle(extent={{28,-7},{56,23}}, lineColor={0,0,127}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.65, radius=0),
+        Text(extent={{-41,21},{-19,-5}}, textString="1", textColor={0,0,127}, fontSize=0),
+        Text(extent={{-5,21},{17,-5}}, textString="2", textColor={0,0,127}, fontSize=0),
+        Text(extent={{31,21},{53,-5}}, textString="3", textColor={0,0,127}, fontSize=0),
+        Line(points={{-55,-35},{-30,-35},{-30,-20}}, color={64,64,64}, thickness=0.75, pattern=LinePattern.Solid, arrow={Arrow.None,Arrow.Filled}),
+        Line(points={{-51,8},{-66,8}}, color={0,0,127}, thickness=0.9, pattern=LinePattern.Solid, arrow={Arrow.None,Arrow.Filled}),
+        Text(extent={{-13,-23},{65,-43}}, textString="feedback", textColor={64,64,64}, fontSize=0),
+        Line(points={{65,-14},{65,30}}, color={191,0,0}, thickness=0.9, pattern=LinePattern.Dash),
+        Text(extent={{51,53},{77,29}}, textString="T", textColor={191,0,0}, fontSize=0),
+        Text(extent={{-65,-50},{65,-75}}, textString="FIFO <= T", textColor={64,64,64}, fontSize=0)
       }),
-    Documentation(info="<html><p><b>Purpose</b> Evaluate a request/response deadline with FIFO pairing.</p><p><b>Interfaces</b> The declared record fields or function arguments form the interface.</p><p><b>Parameters</b> No tuning parameters; use the declared input contract.</p><p><b>Behavior</b> Evaluate a request/response deadline with FIFO pairing</p><p><b>Initialization</b> Evaluated from the current inputs and parameter bindings.</p><p><b>Activation and recovery</b> Not applicable.</p><p><b>Limitations</b> A response at its request deadline is admitted before expiry. Early window closure censors unresolved requests.</p><p><b>Observables</b> Public outputs and the stated input conditions.</p><p><b>Evidence kind</b> Interpret the result with the declared window and sampling rule. Incomplete or invalid evidence must not be interpreted as satisfied.</p><p><b>Example</b> <a href=\"modelica://EvaluationLibrary.Examples.RepeatedRequestResponse\">EvaluationLibrary.Examples.RepeatedRequestResponse</a></p></html>"));
+    Documentation(info="<html><p>Specialize Response.RepeatedResponse by enabling qualifyDeadline. This is meaningful semantic inheritance: it retains the bounded FIFO, explicit initialization, delay history and complete result rather than duplicating their algorithm. Requests are distinct from actual responses, equality is accepted and unavailable closing follow-up is censored.</p></html>"));
 end ResponseDeadline;

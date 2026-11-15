@@ -1,5 +1,14 @@
 within EvaluationLibrary.Response;
-block ConditionOccupancy "量化危险状态占用比例并按用户预算判定"
+block ConditionOccupancy "Qualified condition duration and occupied fraction"
+  parameter String metricId=getInstanceName() "Stable identity of this retained specialist";
+  parameter String requirementId="" "Requirement identity, when configured";
+  parameter String requirementVersion="" "Interpreted requirement version";
+  parameter String unitName="s" "Engineering unit of the reported specialist value";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete specialist result" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
+  Boolean terminalSeen(start=false,fixed=true) "Terminal seen";
+  discrete Boolean qualifiedViolation(start=false,fixed=true) "Qualified violation";
+  discrete Real qualifiedViolationTime(start=0,fixed=true) "Qualified violation time";
+  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Result status";
   parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive window start, s";
   parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive window end, s";
   parameter Boolean applicable = true "Whether the analysis applies";
@@ -9,17 +18,40 @@ block ConditionOccupancy "量化危险状态占用比例并按用户预算判定
   Modelica.Blocks.Interfaces.BooleanOutput inWindow "Current point lies in applicable window" annotation(Placement(transformation(extent={{94,66},{106,78}}), iconTransformation(extent={{94,66},{106,78}})));
   output EvaluationLibrary.Utilities.Types.DataStatus dataState "Collection and data validity state";
   Modelica.Blocks.Interfaces.RealOutput observedDuration(unit="s") "Accumulated valid duration" annotation(Placement(transformation(extent={{94,18},{106,30}}), iconTransformation(extent={{94,18},{106,30}})));
-  parameter Real budget(min=0,max=1) = 0.05 "允许占用比例";
-  Modelica.Blocks.Interfaces.BooleanInput unsafe "真实危险状态" annotation(Placement(transformation(extent={{-106,-30},{-94,-18}}), iconTransformation(extent={{-106,-30},{-94,-18}})));
-  Modelica.Blocks.Interfaces.RealOutput duration(unit="s",start=0,fixed=true) "危险状态累计时长" annotation(Placement(transformation(extent={{94,-30},{106,-18}}), iconTransformation(extent={{94,-30},{106,-18}})));
-  Modelica.Blocks.Interfaces.RealOutput fraction "危险时长占有效时长之比" annotation(Placement(transformation(extent={{94,-78},{106,-66}}), iconTransformation(extent={{94,-78},{106,-66}})));
-  output EvaluationLibrary.Utilities.Types.Verdict verdict "占用预算判定";
+  parameter Real budget(min=0,max=1) = 0.05 "Inclusive maximum unsafe fraction of valid observed time, dimensionless";
+  Modelica.Blocks.Interfaces.BooleanInput unsafe "Unsafe" annotation(Placement(transformation(extent={{-106,-30},{-94,-18}}), iconTransformation(extent={{-106,-30},{-94,-18}})));
+  Modelica.Blocks.Interfaces.RealOutput duration(unit="s",start=0,fixed=true) "Duration" annotation(Placement(transformation(extent={{94,-30},{106,-18}}), iconTransformation(extent={{94,-30},{106,-18}})));
+  Modelica.Blocks.Interfaces.RealOutput fraction "Fraction" annotation(Placement(transformation(extent={{94,-78},{106,-66}}), iconTransformation(extent={{94,-78},{106,-66}})));
+  output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement decision independent of observation completeness";
 protected
-  EvaluationLibrary.Utilities.Internal.ContinuousEvidence evidence(windowStart=windowStart,windowEnd=windowEnd,applicable=applicable);
+  EvaluationLibrary.Utilities.Internal.ContinuousEvidence evidence(windowStart=windowStart,windowEnd=windowEnd,applicable=applicable) "Evidence";
   Boolean dataOK "Validity combined with the metric data domain";
 initial equation
   assert(budget >= 0 and budget <= 1, "Occupancy budget must be in [0,1].");
 equation
+  when terminal() then terminalSeen=true; end when;
+  resultStatus=if verdict==EvaluationLibrary.Utilities.Types.Verdict.INVALID then EvaluationLibrary.Utilities.Types.DataStatus.INVALID
+    elseif verdict==EvaluationLibrary.Utilities.Types.Verdict.NOT_APPLICABLE then EvaluationLibrary.Utilities.Types.DataStatus.NOT_APPLICABLE
+    elseif dataState==EvaluationLibrary.Utilities.Types.DataStatus.COMPLETE and verdict==EvaluationLibrary.Utilities.Types.Verdict.UNDECIDED then EvaluationLibrary.Utilities.Types.DataStatus.INCOMPLETE
+    elseif dataState==EvaluationLibrary.Utilities.Types.DataStatus.PENDING and terminalSeen then EvaluationLibrary.Utilities.Types.DataStatus.INCOMPLETE else dataState;
+  when {initial(),verdict==EvaluationLibrary.Utilities.Types.Verdict.VIOLATED} then
+    qualifiedViolation=pre(qualifiedViolation) or verdict==EvaluationLibrary.Utilities.Types.Verdict.VIOLATED;
+    qualifiedViolationTime=if not pre(qualifiedViolation) and verdict==EvaluationLibrary.Utilities.Types.Verdict.VIOLATED then time else pre(qualifiedViolationTime);
+  end when;
+  result.metricId=metricId; result.requirementId=requirementId; result.requirementVersion=requirementVersion; result.unit=unitName;
+  result.value=duration; result.valueAvailable=(observedDuration>0) and resultStatus<>EvaluationLibrary.Utilities.Types.DataStatus.INVALID and resultStatus<>EvaluationLibrary.Utilities.Types.DataStatus.NOT_APPLICABLE;
+  result.dataStatus=Integer(resultStatus);
+  result.verdict=EvaluationLibrary.Utilities.Functions.QualifiedCode(Integer(resultStatus),if qualifiedViolation then 3 else Integer(verdict));
+  result.complete=time>=windowEnd or terminalSeen;
+  result.windowStart=windowStart; result.windowStop=windowEnd;
+  result.observedDuration=evidence.totalObservedDuration;
+  result.validDuration=observedDuration;
+  result.expectedSamples=0; result.receivedSamples=0; result.validSamples=0;
+  result.everViolated=qualifiedViolation; result.firstViolationTime=qualifiedViolationTime;
+  result.samplePeriod=0; result.evidenceKind=1;
+  result.message=EvaluationLibrary.Utilities.Functions.EvidenceMessage(result.dataStatus,result.verdict,result.valueAvailable)+"; retained specialist; no unsupplied duration or count inferred";
+  result.eventCountsAvailable=false; result.eventCount=0; result.matchedCount=0; result.timedOutCount=0; result.censoredCount=0;
+  result.levelAvailable=false; result.level=0; result.level0Upper=0; result.level1Upper=0;
   evidence.dataOK = dataOK;
   dataState = evidence.dataState;
   inWindow = evidence.inWindow;
@@ -35,37 +67,16 @@ equation
     Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={
         Rectangle(extent={{-90,-85},{90,85}}, lineColor={64,64,64}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
-        Rectangle(extent={{-48,-19},{-25,26}}, lineColor={235,235,235}, fillColor={235,235,235}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
-        Rectangle(extent={{-7,-19},{43,26}}, lineColor={235,235,235}, fillColor={235,235,235}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
-        Line(points={{-61,-19},{-48,-19},{-48,26},{-25,26},{-25,-19},{-7,-19},{-7,26},{43,26},{43,-19},{63,-19}}, color={0,0,127}, thickness=1.1, pattern=LinePattern.Solid),
-        Line(points={{-59,-37},{61,-37}}, color={64,64,64}, thickness=0.65, pattern=LinePattern.Solid, arrow={Arrow.Filled,Arrow.Filled}),
-        Text(extent={{-65,-50},{65,-75}}, textString="Ttrue / T", textColor={64,64,64}, fontSize=0),
+        Rectangle(extent={{-64,-24},{64,40}}, lineColor={128,128,128}, fillColor={245,245,245}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4, radius=0),
+        Rectangle(extent={{-48,-24},{-29,40}}, lineColor={128,128,128}, fillColor={235,235,235}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.35, radius=0),
+        Rectangle(extent={{0,-24},{28,40}}, lineColor={128,128,128}, fillColor={235,235,235}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.35, radius=0),
+        Line(points={{-64,-24},{-48,-24},{-48,40},{-29,40},{-29,-24},{0,-24},{0,40},{28,40},{28,-24},{64,-24}}, color={0,0,127}, thickness=1, pattern=LinePattern.Solid),
+        Line(points={{-64,-38},{64,-38}}, color={64,64,64}, thickness=0.7, pattern=LinePattern.Solid, arrow={Arrow.Filled,Arrow.Filled}),
+        Line(points={{-64,-43},{-64,-33}}, color={64,64,64}, thickness=0.55, pattern=LinePattern.Solid),
+        Line(points={{64,-43},{64,-33}}, color={64,64,64}, thickness=0.55, pattern=LinePattern.Solid),
+        Text(extent={{-65,-50},{65,-75}}, textString="Tu / Tv", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}}, preserveAspectRatio=true), graphics={Text(extent={{-96,99},{96,88}}, textColor={73,53,132}, textString="ConditionOccupancy")}),
-    Documentation(info="<html><p><b>Purpose</b> 量化危险状态占用比例并按用户预算判定</p><p><b>Interfaces</b> Modelica.Blocks.Interfaces.BooleanInput valid \"Host-provided input validity\"; Modelica.Blocks.Interfaces.BooleanOutput inWindow \"Current point lies in applicable window\"; output EvaluationLibrary.Utilities.Types.DataStatus dataState \"Collection and data validity state\"; Modelica.Blocks.Interfaces.RealOutput observedDuration(unit=\"s\") \"Accumulated valid duration\"; Modelica.Blocks.Interfaces.BooleanInput unsafe \"真实危险状态\"; Modelica.Blocks.Interfaces.RealOutput duration(unit=\"s\",start=0,fixed=true) \"危险状态累计时长\"; Modelica.Blocks.Interfaces.RealOutput fraction \"危险时长占有效时长之比\"; output EvaluationLibrary.Utilities.Types.Verdict verdict \"占用预算判定\"</p><p><b>Parameters</b> parameter Modelica.Units.SI.Time windowStart = 0 \"Inclusive window start, s\"; parameter Modelica.Units.SI.Time windowEnd = 5 \"Exclusive window end, s\"; parameter Boolean applicable = true \"Whether the analysis applies\"; parameter Real budget(min=0,max=1) = 0.05 \"允许占用比例\"</p><p><b>Behavior</b> 量化危险状态占用比例并按用户预算判定</p><p><b>Initialization</b> Use the declared initial values and host state modifiers.</p><p><b>Activation and recovery</b> Not applicable.</p><p><b>Limitations</b> Use the declared parameter range. The catalog identifies simulation coverage.</p><p><b>Observables</b> Inspect the declared output variables.</p><p><b>Evidence kind</b> Inspect applicability, coverage and validity before interpreting the result.</p><p><b>Example</b> <a href=\"modelica://EvaluationLibrary.Examples.FirstOrderResponse\">EvaluationLibrary.Examples.FirstOrderResponse</a></p>
-<p>量化危险状态占用比例并按用户预算判定</p>
-<p>专业分类为 TimeDomainAnalysis.Duration。</p>
-<p>接口与方向</p>
-<ul>
-<li><code>Modelica.Blocks.Interfaces.BooleanInput valid \"Host-provided input validity\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.BooleanOutput inWindow \"Current point lies in applicable window\"</code></li>
-<li><code>output EvaluationLibrary.Utilities.Types.DataStatus dataState \"Collection and data validity state\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.RealOutput observedDuration(unit=\"s\") \"Accumulated valid duration\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.BooleanInput unsafe \"真实危险状态\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.RealOutput duration(unit=\"s\",start=0,fixed=true) \"危险状态累计时长\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.RealOutput fraction \"危险时长占有效时长之比\"</code></li>
-<li><code>output EvaluationLibrary.Utilities.Types.Verdict verdict \"占用预算判定\"</code></li>
-</ul>
-<p>参数、类型、默认值及约束</p>
-<ul>
-<li><code>Modelica.Units.SI.Time windowStart = 0 \"Inclusive window start, s\"</code></li>
-<li><code>Modelica.Units.SI.Time windowEnd = 5 \"Exclusive window end, s\"</code></li>
-<li><code>Boolean applicable = true \"Whether the analysis applies\"</code></li>
-<li><code>Real budget(min=0,max=1) = 0.05 \"允许占用比例\"</code></li>
-</ul>
-<p><b>时序与基准行为</b> 分子和分母均按有效时间累计。等于预算通过。</p>
-<p><b>最小用法</b> 接角度、温度、压力等生成的危险条件。 <a href=\"modelica://EvaluationLibrary.Examples.ResultAggregationAndFiles\">ThermalSafetyEvaluation</a> 展示同域接线。</p>
-<p><b>适用边界</b> 占用比例是轨迹的时间描述。瞬时危险可能具有零时长，应另用包络判据。</p>
-</html>"));
+    Documentation(info="<html><p>Integrate the valid time for which unsafe is true, then divide by valid observed duration. duration is in seconds and fraction is dimensionless. budget defaults to 0.05 and must lie in zero to one; complete coverage with fraction no greater than budget is SATISFIED. A budget is an occupancy fraction, not a time allowance.</p><p>The fixed observation defaults to [0,5) s. valid is host-provided and false validity or a failed numeric-domain check inside the window latches INVALID. Positive valid duration is needed for duration-normalized values. A normal stop before full observation gives an INCOMPLETE complete result; DataStatus and Verdict remain separate.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
 end ConditionOccupancy;

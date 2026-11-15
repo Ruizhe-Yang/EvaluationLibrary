@@ -3,11 +3,12 @@ EnergyEfficiency
 GatedPeak
 Integral
 LinearTrend
+SampledMoments
 SampleExtrema
 SampleMean
 SampleRMS
 SampleVariance
-SampledMoments
+SignalAssessment
 TimeMean
 TimeRMS
 TimeVariance

@@ -1,33 +1,37 @@
 within EvaluationLibrary.Statistics;
 block SampleMean "Arithmetic mean on the explicit qualified sampling grid"
-parameter EvaluationLibrary.Utilities.Types.WindowMode windowMode=EvaluationLibrary.Utilities.Types.WindowMode.FixedTime;
-  parameter Modelica.Units.SI.Time windowStart=0;
-  parameter Modelica.Units.SI.Time windowStop=5;
-  parameter Boolean applicable=true;
-  parameter Boolean useValidInput=false;
+  parameter String metricId=getInstanceName() "Stable metric identity";
+  parameter String requirementId="" "Requirement identity; empty for a statistic";
+  parameter String requirementVersion="" "Interpreted requirement version";
+  parameter String unitName="1" "Engineering unit of the reported value";
+parameter EvaluationLibrary.Utilities.Types.WindowMode windowMode=EvaluationLibrary.Utilities.Types.WindowMode.FixedTime "Fixed-time or first externally gated observation window";
+  parameter Modelica.Units.SI.Time windowStart=0 "Inclusive observation start in seconds";
+  parameter Modelica.Units.SI.Time windowStop=5 "Exclusive observation stop in seconds";
+  parameter Boolean applicable=true "Whether this evaluation applies";
+  parameter Boolean useValidInput=false "Expose the host-provided validity connector";
 
-  parameter Modelica.Units.SI.Time samplePeriod(min=0)=0.01;
-  parameter Modelica.Units.SI.Time sampleStart=0;
-  Modelica.Blocks.Interfaces.BooleanInput valid if useValidInput annotation(Placement(transformation(origin={0,100},extent={{-10,-10},{10,10}}),iconTransformation(origin={0,100},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanInput window if windowMode==EvaluationLibrary.Utilities.Types.WindowMode.ExternalSingle annotation(Placement(transformation(origin={-100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,70},extent={{-10,-10},{10,10}})));
-  output EvaluationLibrary.Utilities.Types.DataStatus dataStatus;
-  output EvaluationLibrary.Utilities.Types.Verdict verdict;
-  output Boolean complete;
-  output Boolean everViolated;
-  output Modelica.Units.SI.Time firstViolationTime;
-  EvaluationLibrary.Utilities.Interfaces.MetricOutput result annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.RealInput u annotation(Placement(transformation(origin={-100,23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,23.33333},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.RealOutput value annotation(Placement(transformation(origin={100,0},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,0},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanOutput available annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
-  output Integer nValid;
+  parameter Modelica.Units.SI.Time samplePeriod(min=0)=0.01 "Positive uniform sampling interval in seconds";
+  parameter Modelica.Units.SI.Time sampleStart=0 "Uniform sample grid origin in seconds";
+  Modelica.Blocks.Interfaces.BooleanInput valid if useValidInput "Host declares the observed inputs valid" annotation(Placement(transformation(origin={0,100},extent={{-10,-10},{10,10}}),iconTransformation(origin={0,100},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanInput window if windowMode==EvaluationLibrary.Utilities.Types.WindowMode.ExternalSingle "External observation gate; only the first contiguous interval is accepted" annotation(Placement(transformation(origin={-100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,70},extent={{-10,-10},{10,10}})));
+  output EvaluationLibrary.Utilities.Types.DataStatus dataStatus "Evidence qualification independent of requirement verdict";
+  output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement decision independent of observation completeness";
+  output Boolean complete "Collection has closed; inspect DataStatus before assuming full evidence";
+  output Boolean everViolated "A qualified violation witness exists";
+  output Modelica.Units.SI.Time firstViolationTime "First qualified violation instant; meaningful only when everViolated";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete directly reportable evidence result" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.RealInput u "Observed real signal in the declared engineering unit" annotation(Placement(transformation(origin={-100,23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,23.33333},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.RealOutput value "Numerical metric; meaningful only when available" annotation(Placement(transformation(origin={100,0},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,0},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanOutput available "The numerical output exists in the current data domain" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
+  output Integer nValid "N valid";
 protected
-  Modelica.Blocks.Interfaces.BooleanInput trusted annotation(Placement(transformation(origin={-100,-23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-23.33333},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanInput externalWindow annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanInput trusted "Trusted" annotation(Placement(transformation(origin={-100,-23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-23.33333},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanInput externalWindow "External window" annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
   EvaluationLibrary.Utilities.Internal.WindowEvidence gate(windowMode=windowMode,windowStart=windowStart,windowStop=windowStop,
-    sampled=true,samplePeriod=samplePeriod,sampleStart=sampleStart,applicable=applicable);
-  Boolean dataOK;
-  Boolean violationNow;
-  EvaluationLibrary.Utilities.Internal.SampleAccumulator acc;
+    sampled=true,samplePeriod=samplePeriod,sampleStart=sampleStart,applicable=applicable) "Gate";
+  Boolean dataOK "Data ok";
+  Boolean violationNow "Violation now";
+  EvaluationLibrary.Utilities.Internal.SampleAccumulator acc "Acc";
 equation
   connect(valid,trusted);
   connect(window,externalWindow);
@@ -56,6 +60,24 @@ equation
   result.expectedSamples=gate.expectedSamples;
   result.receivedSamples=gate.receivedSamples;
   result.validSamples=gate.validSamples;
+  result.metricId=metricId;
+  result.requirementId=requirementId;
+  result.requirementVersion=requirementVersion;
+  result.unit=unitName;
+  result.windowStart=gate.actualStart;
+  result.windowStop=gate.actualStop;
+  result.observedDuration=gate.observedDuration;
+  result.samplePeriod=if gate.sampled then samplePeriod else 0;
+  result.evidenceKind=Integer(EvaluationLibrary.Utilities.Types.EvidenceKind.Sampled);
+  result.message=EvaluationLibrary.Utilities.Functions.EvidenceMessage(result.dataStatus,result.verdict,result.valueAvailable);
+  result.eventCountsAvailable=false; result.eventCount=0;
+  result.matchedCount=0;
+  result.timedOutCount=0;
+  result.censoredCount=0;
+  result.levelAvailable=false;
+  result.level=0;
+  result.level0Upper=0;
+  result.level1Upper=0;
   result.complete=complete;
 
   connect(u,acc.u);
@@ -66,20 +88,20 @@ equation
   annotation(Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={
         Rectangle(extent={{-90,-85},{90,85}}, lineColor={64,64,64}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
-        Line(points={{-62,55},{-62,-40},{65,-40}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Solid),
-        Line(points={{-51,-35},{-51,-8}}, color={128,128,128}, thickness=0.55, pattern=LinePattern.Solid),
-        Line(points={{-27,-35},{-27,37}}, color={128,128,128}, thickness=0.55, pattern=LinePattern.Solid),
-        Line(points={{-3,-35},{-3,12}}, color={128,128,128}, thickness=0.55, pattern=LinePattern.Solid),
-        Line(points={{21,-35},{21,-17}}, color={128,128,128}, thickness=0.55, pattern=LinePattern.Solid),
-        Line(points={{45,-35},{45,29}}, color={128,128,128}, thickness=0.55, pattern=LinePattern.Solid),
-        Ellipse(extent={{-54.8,-11.8},{-47.2,-4.2}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4),
-        Ellipse(extent={{-30.8,33.2},{-23.2,40.8}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4),
-        Ellipse(extent={{-6.8,8.2},{0.8,15.8}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4),
-        Ellipse(extent={{17.2,-20.8},{24.8,-13.2}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4),
-        Ellipse(extent={{41.2,25.2},{48.8,32.8}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4),
-        Line(points={{-58,10},{62,10}}, color={75,138,73}, thickness=0.5, pattern=LinePattern.Dash),
+        Line(points={{-64,61},{-64,-38},{65,-38}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Solid),
+        Line(points={{-51,-38},{-51,-7}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Solid),
+        Line(points={{-27,-38},{-27,38}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Solid),
+        Line(points={{-3,-38},{-3,12}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Solid),
+        Line(points={{21,-38},{21,-17}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Solid),
+        Line(points={{45,-38},{45,29}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Solid),
+        Ellipse(extent={{-54.4,-10.4},{-47.6,-3.6}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.45),
+        Ellipse(extent={{-30.4,34.6},{-23.6,41.4}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.45),
+        Ellipse(extent={{-6.4,8.6},{0.4,15.4}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.45),
+        Ellipse(extent={{17.6,-20.4},{24.4,-13.6}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.45),
+        Ellipse(extent={{41.6,25.6},{48.4,32.4}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.45),
+        Line(points={{-57,10},{59,10}}, color={95,115,95}, thickness=0.6, pattern=LinePattern.Dash),
         Text(extent={{-65,-50},{65,-75}}, textString="mean[k]", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
-    Documentation(info="<html><p><b>Purpose</b> Arithmetic mean on the explicit qualified sampling grid.</p><p><b>Interfaces</b> Modelica.Blocks.Interfaces.BooleanInput valid if useValidInput; Modelica.Blocks.Interfaces.BooleanInput window if windowMode==EvaluationLibrary.Utilities.Types.WindowMode.ExternalSingle; output EvaluationLibrary.Utilities.Types.DataStatus dataStatus; output EvaluationLibrary.Utilities.Types.Verdict verdict; output Boolean complete; output Boolean everViolated; output Modelica.Units.SI.Time firstViolationTime; EvaluationLibrary.Utilities.Interfaces.MetricOutput result; Modelica.Blocks.Interfaces.RealInput u; Modelica.Blocks.Interfaces.RealOutput value; Modelica.Blocks.Interfaces.BooleanOutput available; output Integer nValid</p><p><b>Parameters</b> parameter EvaluationLibrary.Utilities.Types.WindowMode windowMode=EvaluationLibrary.Utilities.Types.WindowMode.FixedTime; parameter Modelica.Units.SI.Time windowStart=0; parameter Modelica.Units.SI.Time windowStop=5; parameter Boolean applicable=true; parameter Boolean useValidInput=false; parameter Modelica.Units.SI.Time samplePeriod(min=0)=0.01; parameter Modelica.Units.SI.Time sampleStart=0</p><p><b>Behavior</b> Arithmetic mean on the explicit qualified sampling grid</p><p><b>Initialization</b> Evaluated from the current inputs and parameter bindings.</p><p><b>Activation and recovery</b> Not applicable.</p><p><b>Limitations</b> Only grid samples are evaluated. Zero or insufficient data cannot establish a complete result.</p><p><b>Observables</b> complete, everViolated, result, value, available, nValid</p><p><b>Evidence kind</b> Interpret the result with the declared window and sampling rule. Incomplete or invalid evidence must not be interpreted as satisfied.</p><p><b>Example</b> <a href=\"modelica://EvaluationLibrary.Examples.AnalyticStatistics\">EvaluationLibrary.Examples.AnalyticStatistics</a></p></html>"));
+    Documentation(info="<html><p>Return the arithmetic mean of accepted uniform samples. Positive accepted sample count is required. Samples at the inclusive window start are eligible and the exclusive stop is excluded; samplePeriod defaults to 0.01 s and sampleStart to 0 s.</p><p>The default fixed observation is [0,5) s. ExternalSingle instead observes only the first contiguous external gate; a later gate invalidates the history. useValidInput defaults to false; when enabled, false validity or nonfinite in-window data latch INVALID. Early normal termination or missing coverage is INCOMPLETE. DataStatus qualifies evidence independently of Verdict. Numeric availability and violation witnesses must be inspected separately. Stable identity, unitName and optional requirement metadata originate here and travel directly with result to a writer.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
 end SampleMean;

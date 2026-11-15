@@ -1,40 +1,50 @@
 within EvaluationLibrary.Utilities.Types;
-record MetricResult "Store metric value, eligibility, window and witness evidence"
-  extends Modelica.Icons.Record;
-String metricId;
-String requirementId;
-String requirementVersion;
-Real value;
-Boolean valueAvailable;
-String unit;
-EvaluationLibrary.Utilities.Types.DataStatus dataStatus;
-EvaluationLibrary.Utilities.Types.Verdict verdict;
-Modelica.Units.SI.Time windowStart;
-Modelica.Units.SI.Time windowStop;
-Modelica.Units.SI.Time observedDuration;
-Modelica.Units.SI.Time validDuration;
-Integer expectedSamples;
-Integer receivedSamples;
-Integer validSamples;
-Boolean everViolated;
-Modelica.Units.SI.Time firstViolationTime;
-Modelica.Units.SI.Time samplePeriod;
-EvaluationLibrary.Utilities.Types.EvidenceKind evidenceKind;
-String message;
-  annotation(Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
+record MetricResult "Canonical complete metric and evidence record"
+  String metricId "Stable metric identity";
+  String requirementId "Requirement identity; empty for a statistic";
+  String requirementVersion "Version of the interpreted requirement";
+  Real value "Numerical value; meaningful only when valueAvailable";
+  Boolean valueAvailable "A qualified numerical value is available";
+  EvaluationLibrary.Utilities.Types.DataStatus dataStatus "DataStatus enumeration, independently of verdict";
+  EvaluationLibrary.Utilities.Types.Verdict verdict "Verdict enumeration, independently of data status";
+  String unit "Engineering unit of value";
+  Real windowStart "Inclusive observation start in seconds";
+  Real windowStop "Exclusive observation stop in seconds";
+  Real observedDuration "Observed duration in seconds";
+  Real validDuration "Duration with valid input in seconds";
+  Integer expectedSamples "Expected grid samples; zero for non-sampled evidence";
+  Integer receivedSamples "Observed grid samples";
+  Integer validSamples "Valid grid samples";
+  Boolean everViolated "A qualified violation has been observed";
+  Real firstViolationTime "First violation time; meaningful only when everViolated";
+  Real samplePeriod "Grid spacing in seconds; zero if not sampled";
+  EvaluationLibrary.Utilities.Types.EvidenceKind evidenceKind "Continuous, sampled, event or derived evidence enumeration";
+  String message "Readable qualification and interpretation";
+  Boolean complete "The observation has closed, including a censored normal stop";
+  Boolean eventCountsAvailable "Event counters are available, independently of valueAvailable";
+  Integer eventCount "Qualified event or request count";
+  Integer matchedCount "One-to-one request-response pairs";
+  Integer timedOutCount "Requests with an observed expired deadline";
+  Integer censoredCount "Requests without sufficient observation";
+  Boolean levelAvailable "A sampled engineering severity level is available";
+  Integer level "Case-specific severity level, 0, 1 or 2";
+  Real level0Upper "Inclusive absolute-value upper bound for level 0";
+  Real level1Upper "Inclusive absolute-value upper bound for level 1";
+  annotation(Icon(coordinateSystem(preserveAspectRatio=true,extent={{-100,-100},{100,100}}),
       graphics={
-        Rectangle(extent={{-100,-100},{100,100}}, lineColor={108,88,49}, fillColor={255,215,136}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
-        Line(points={{-100,48},{100,48}}, color={108,88,49}, thickness=0.5, pattern=LinePattern.Solid),
-        Rectangle(extent={{-50.16,-41.96},{50.16,38.12}}, lineColor={108,88,49}, fillColor={255,215,136}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
-        Line(points={{-50.16,12.6},{50.16,12.6}}, color={108,88,49}, thickness=0.5, pattern=LinePattern.Solid),
-        Line(points={{-50.16,-14.68},{50.16,-14.68}}, color={108,88,49}, thickness=0.5, pattern=LinePattern.Solid),
-        Line(points={{-17.6,-41.96},{-17.6,38.12}}, color={108,88,49}, thickness=0.5, pattern=LinePattern.Solid),
-        Text(extent={{-43.12,35.48},{-22,16.12}}, textString="id", textColor={108,88,49}, fontSize=0),
-        Text(extent={{-43.12,8.2},{-22,-10.28}}, textString="x", textColor={108,88,49}, fontSize=0),
-        Text(extent={{-43.12,-19.08},{-22,-37.56}}, textString="t", textColor={108,88,49}, fontSize=0),
-        Line(points={{20.68,-30.52},{27.7024,-37.912},{41.3776,-20.1712}}, color={75,138,73}, thickness=1.5, pattern=LinePattern.Solid),
-        Text(extent={{-70,80},{70,52}}, textString="Result", textColor={108,88,49}, fontSize=0),
+        Rectangle(extent={{-83,-88},{83,88}}, lineColor={108,88,49}, fillColor={255,215,136}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
+        Line(points={{-83,47},{83,47}}, color={108,88,49}, thickness=0.6, pattern=LinePattern.Solid),
+        Text(extent={{-45,82},{45,52}}, textString="30", textColor={108,88,49}, fontSize=0),
+        Rectangle(extent={{-66,-69},{66,39}}, lineColor={108,88,49}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
+        Line(points={{-66,-51},{66,-51}}, color={108,88,49}, thickness=0.5, pattern=LinePattern.Solid),
+        Line(points={{-66,-33},{66,-33}}, color={108,88,49}, thickness=0.5, pattern=LinePattern.Solid),
+        Line(points={{-66,-15},{66,-15}}, color={108,88,49}, thickness=0.5, pattern=LinePattern.Solid),
+        Line(points={{-66,3},{66,3}}, color={108,88,49}, thickness=0.5, pattern=LinePattern.Solid),
+        Line(points={{-66,21},{66,21}}, color={108,88,49}, thickness=0.5, pattern=LinePattern.Solid),
+        Line(points={{-39.6,-69},{-39.6,39}}, color={108,88,49}, thickness=0.5, pattern=LinePattern.Solid),
+        Line(points={{-13.2,-69},{-13.2,39}}, color={108,88,49}, thickness=0.5, pattern=LinePattern.Solid),
+        Line(points={{13.2,-69},{13.2,39}}, color={108,88,49}, thickness=0.5, pattern=LinePattern.Solid),
+        Line(points={{39.6,-69},{39.6,39}}, color={108,88,49}, thickness=0.5, pattern=LinePattern.Solid),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
-      }),
-    Documentation(info="<html><p><b>Purpose</b> Store metric value, eligibility, window and witness evidence.</p><p><b>Interfaces</b> The declared record fields or function arguments form the interface.</p><p><b>Parameters</b> No tuning parameters; use the declared input contract.</p><p><b>Behavior</b> Store metric value, eligibility, window and witness evidence</p><p><b>Initialization</b> Evaluated from the current inputs and parameter bindings.</p><p><b>Activation and recovery</b> Not applicable.</p><p><b>Limitations</b> Unavailable values and absent witness times use a placeholder numeric field. Use the accompanying flags.</p><p><b>Observables</b> Public outputs and the stated input conditions.</p><p><b>Example</b> <a href=\"modelica://EvaluationLibrary.Examples.ResultAggregationAndFiles\">EvaluationLibrary.Examples.ResultAggregationAndFiles</a></p></html>"));
+      }),Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),Documentation(info="<html><p>Canonical 30-field complete result, using enumerated DataStatus, Verdict and EvidenceKind. It preserves producer identity, engineering unit, evidence qualification, numerical availability, observation coverage and violation witnesses together. complete means collection is closed, including an early normal stop; it does not imply COMPLETE evidence. eventCountsAvailable and levelAvailable separately guard optional counters and engineering categories. The corresponding fixed-size MetricInput and MetricOutput use the same fields with fixed integer enum ordinals for standard directional connector compatibility. No second legacy record protocol is supported.</p></html>"));
 end MetricResult;

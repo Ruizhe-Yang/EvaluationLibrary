@@ -3,11 +3,13 @@ package EvaluationLibrary "Read-only metrics, explicit evidence qualification an
   extends Modelica.Icons.Package;
   annotation(Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={
-        Line(points={{-57.04,50.6},{-57.04,-36.8},{59.8,-36.8}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Solid),
-        Line(points={{-52.44,-16.56},{-28.52,-4.6},{-4.6,18.4},{22.08,33.12},{53.36,28.52}}, color={128,128,128}, thickness=0.9, pattern=LinePattern.Dash),
-        Line(points={{-52.44,-23.92},{-28.52,-12.88},{-4.6,4.6},{22.08,21.16},{53.36,18.4}}, color={0,0,127}, thickness=1.2, pattern=LinePattern.Solid),
-        Line(points={{4.6,23.92},{4.6,10.12}}, color={64,64,64}, thickness=0.65, pattern=LinePattern.Solid, arrow={Arrow.Filled,Arrow.Filled}),
-        Line(points={{22.5,-43},{34.28,-55.4},{57.22,-25.64}}, color={75,138,73}, thickness=1.5, pattern=LinePattern.Solid)
+        Line(points={{-60.72,41.4},{-45.08,41.4},{-32.2,56.12},{-17.48,27.6},{-1.84,41.4},{11.04,41.4}}, color={0,0,127}, thickness=1, pattern=LinePattern.Solid),
+        Line(points={{-60.72,2.76},{-38.64,2.76},{-21.16,22.08},{-1.84,-11.96},{11.04,2.76}}, color={0,0,127}, thickness=1, pattern=LinePattern.Solid),
+        Line(points={{-60.72,-36.8},{-35.88,-36.8},{-20.24,-22.08},{11.04,-36.8}}, color={0,0,127}, thickness=1, pattern=LinePattern.Solid),
+        Rectangle(extent={{24.84,-42.32},{63.48,55.2}}, lineColor={128,128,128}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
+        Line(points={{32.2,34.04},{56.12,34.04}}, color={128,128,128}, thickness=0.65, pattern=LinePattern.Solid),
+        Line(points={{32.2,6.44},{56.12,6.44}}, color={128,128,128}, thickness=0.65, pattern=LinePattern.Solid),
+        Line(points={{32.2,-21.16},{56.12,-21.16}}, color={128,128,128}, thickness=0.65, pattern=LinePattern.Solid)
       }),
-    uses(Modelica(version="4.0.0")), version="0.3.1", Documentation(info="<html><p>Read-only metrics, explicit evidence qualification and structured result reporting.</p></html>"));
+    uses(Modelica(version="4.0.0")), version="0.4.0", Documentation(info="<html><p>EvaluationLibrary 0.4.0 provides read-only multichannel and event assessment, retained specialist metrics, explicit evidence qualification and direct complete-result reporting. Only Modelica Standard Library 4.0.0 is required. Begin with UsersGuide.GettingStarted and the nine self-contained Examples. DataStatus is independent of Verdict; observation incompleteness cannot imply satisfaction.</p></html>"));
 end EvaluationLibrary;

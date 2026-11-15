@@ -1,12 +1,12 @@
+AdvanceFIFO
 ContinuousAccumulator
 ContinuousEvidence
+csvQuote
+LogCompletion
+oneSidedDFT
 SampleAccumulator
 SampledEvidence
 SpectrumBuffer
 ToneSpectrum
 WindowEvidence
 WriteRows
-LogCompletion
-csvQuote
-formatResults
-oneSidedDFT

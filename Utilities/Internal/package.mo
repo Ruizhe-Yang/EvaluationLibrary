@@ -3,8 +3,11 @@ package Internal "Internal"
   extends Modelica.Icons.Package;
   annotation(Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={
-        Ellipse(extent={{-48.76,-46},{48.76,51.52}}, lineColor={128,128,128}, fillColor={235,235,235}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5),
-        Line(points={{-31.28,-28.52},{31.28,34.04}}, color={64,64,64}, thickness=1.1, pattern=LinePattern.Solid),
-        Line(points={{-31.28,34.04},{31.28,-28.52}}, color={64,64,64}, thickness=1.1, pattern=LinePattern.Solid)
+        Rectangle(extent={{-57.04,9.2},{-7.36,53.36}}, lineColor={128,128,128}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
+        Rectangle(extent={{7.36,-50.6},{57.04,-6.44}}, lineColor={128,128,128}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
+        Line(points={{-7.36,31.28},{32.2,31.28},{32.2,-6.44}}, color={0,0,127}, thickness=0.9, pattern=LinePattern.Solid, arrow={Arrow.None,Arrow.Filled}),
+        Text(extent={{-50.6,46.92},{-12.88,14.72}}, textString="Σ", textColor={0,0,127}, fontSize=0),
+        Text(extent={{14.72,-11.04},{50.6,-45.08}}, textString="z", textColor={0,0,127}, fontSize=0)
       }));
+  annotation(Documentation(info="<html><p>package supports the single complete-result and explicit qualification contract. See the parameter and field descriptions for its numerical or logical meaning.</p></html>"));
 end Internal;

@@ -1,6 +1,5 @@
 BooleanRequirement
 CircularErrorBound
-Conjunction
 LabelEpisodeDelay
 LowerBound
 NumericRequirement

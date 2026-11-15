@@ -1,28 +1,57 @@
 within EvaluationLibrary.Frequency;
-block ToneResponse "以共同采样窗估计单频增益和相位差"
-  parameter Integer nSamples(min=4,max=1024) = 200;
-  parameter Modelica.Units.SI.Time startTime = 0;
-  parameter Modelica.Units.SI.Time samplePeriod(min=Modelica.Constants.small) = 0.005;
-  parameter Integer bin(min=1,max=div(nSamples-1,2)) = min(8,div(nSamples-1,2));
-  parameter EvaluationLibrary.Utilities.Types.SpectralWindow window = EvaluationLibrary.Utilities.Types.SpectralWindow.Rectangular;
+block ToneResponse "Coherent finite-window input-output gain and phase difference"
+  parameter String metricId=getInstanceName() "Stable identity of this retained specialist";
+  parameter String requirementId="" "Requirement identity, when configured";
+  parameter String requirementVersion="" "Interpreted requirement version";
+  parameter String unitName="1" "Engineering unit of the reported specialist value";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete specialist result" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
+  Boolean terminalSeen(start=false,fixed=true) "Terminal seen";
+  discrete Boolean qualifiedViolation(start=false,fixed=true) "Qualified violation";
+  discrete Real qualifiedViolationTime(start=0,fixed=true) "Qualified violation time";
+  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Result status";
+  parameter Integer nSamples(min=4,max=1024) = 200 "Number of uniformly spaced observations in the finite record";
+  parameter Modelica.Units.SI.Time startTime = 0 "First observation or stimulus time in seconds";
+  parameter Modelica.Units.SI.Time samplePeriod(min=Modelica.Constants.small) = 0.005 "Positive uniform sampling interval in seconds";
+  parameter Integer bin(min=1,max=div(nSamples-1,2)) = min(8,div(nSamples-1,2)) "Positive coherent Fourier bin below the Nyquist bin";
+  parameter EvaluationLibrary.Utilities.Types.SpectralWindow window = EvaluationLibrary.Utilities.Types.SpectralWindow.Rectangular "Finite spectral window selection";
   parameter Real minInputAmplitude(min=Modelica.Constants.small) = 1e-6 "Amplitude floor, input units";
   parameter Real minOutputAmplitude(min=Modelica.Constants.small) = 1e-6 "Phase amplitude floor, output units";
-  Modelica.Blocks.Interfaces.RealInput excitation annotation(Placement(transformation(extent={{-106,42},{-94,54}}), iconTransformation(extent={{-106,42},{-94,54}})));
-  Modelica.Blocks.Interfaces.RealInput response annotation(Placement(transformation(extent={{-106,-6},{-94,6}}), iconTransformation(extent={{-106,-6},{-94,6}})));
+  Modelica.Blocks.Interfaces.RealInput excitation "Excitation" annotation(Placement(transformation(extent={{-106,42},{-94,54}}), iconTransformation(extent={{-106,42},{-94,54}})));
+  Modelica.Blocks.Interfaces.RealInput response "Response" annotation(Placement(transformation(extent={{-106,-6},{-94,6}}), iconTransformation(extent={{-106,-6},{-94,6}})));
   Modelica.Blocks.Interfaces.BooleanInput valid "Common validity flag" annotation(Placement(transformation(extent={{-106,-54},{-94,-42}}), iconTransformation(extent={{-106,-54},{-94,-42}})));
   Modelica.Blocks.Interfaces.RealOutput gain "Output amplitude / input amplitude" annotation(Placement(transformation(extent={{94,76},{106,88}}), iconTransformation(extent={{94,76},{106,88}})));
   Modelica.Blocks.Interfaces.RealOutput phaseDifference(unit="rad") "Output minus input phase in [-pi,pi]" annotation(Placement(transformation(extent={{94,35},{106,47}}), iconTransformation(extent={{94,35},{106,47}})));
-  Modelica.Blocks.Interfaces.BooleanOutput gainDefined annotation(Placement(transformation(extent={{94,-6},{106,6}}), iconTransformation(extent={{94,-6},{106,6}})));
-  Modelica.Blocks.Interfaces.BooleanOutput phaseDefined annotation(Placement(transformation(extent={{94,-47},{106,-35}}), iconTransformation(extent={{94,-47},{106,-35}})));
-  Modelica.Blocks.Interfaces.RealOutput frequency(unit="Hz") annotation(Placement(transformation(extent={{94,-88},{106,-76}}), iconTransformation(extent={{94,-88},{106,-76}})));
-  output EvaluationLibrary.Utilities.Types.DataStatus dataState;
+  Modelica.Blocks.Interfaces.BooleanOutput gainDefined "Gain defined" annotation(Placement(transformation(extent={{94,-6},{106,6}}), iconTransformation(extent={{94,-6},{106,6}})));
+  Modelica.Blocks.Interfaces.BooleanOutput phaseDefined "Phase defined" annotation(Placement(transformation(extent={{94,-47},{106,-35}}), iconTransformation(extent={{94,-47},{106,-35}})));
+  Modelica.Blocks.Interfaces.RealOutput frequency(unit="Hz") "Selected frequency in hertz, not above Nyquist" annotation(Placement(transformation(extent={{94,-88},{106,-76}}), iconTransformation(extent={{94,-88},{106,-76}})));
+  output EvaluationLibrary.Utilities.Types.DataStatus dataState "Evidence qualification independent of requirement verdict";
 protected
-  EvaluationLibrary.Utilities.Internal.ToneSpectrum x(nSamples=nSamples,nBins=bin,startTime=startTime,samplePeriod=samplePeriod,window=window,amplitudeFloor=minInputAmplitude);
-  EvaluationLibrary.Utilities.Internal.ToneSpectrum y(nSamples=nSamples,nBins=bin,startTime=startTime,samplePeriod=samplePeriod,window=window,amplitudeFloor=minOutputAmplitude);
-  Real delta(unit="rad");
+  EvaluationLibrary.Utilities.Internal.ToneSpectrum x(nSamples=nSamples,nBins=bin,startTime=startTime,samplePeriod=samplePeriod,window=window,amplitudeFloor=minInputAmplitude) "X";
+  EvaluationLibrary.Utilities.Internal.ToneSpectrum y(nSamples=nSamples,nBins=bin,startTime=startTime,samplePeriod=samplePeriod,window=window,amplitudeFloor=minOutputAmplitude) "Y";
+  Real delta(unit="rad") "Delta";
 initial equation
   assert(bin>=1 and 2*bin<nSamples and minInputAmplitude>0 and minOutputAmplitude>0, "A non-Nyquist positive bin and positive floors are required.");
 equation
+  when terminal() then terminalSeen=true; end when;
+  resultStatus=if (dataState)==EvaluationLibrary.Utilities.Types.DataStatus.PENDING and terminalSeen then EvaluationLibrary.Utilities.Types.DataStatus.INCOMPLETE else (dataState);
+  when {initial(),false} then
+    qualifiedViolation=pre(qualifiedViolation) or false;
+    qualifiedViolationTime=if not pre(qualifiedViolation) and false then time else pre(qualifiedViolationTime);
+  end when;
+  result.metricId=metricId; result.requirementId=requirementId; result.requirementVersion=requirementVersion; result.unit=unitName;
+  result.value=gain; result.valueAvailable=(gainDefined) and resultStatus<>EvaluationLibrary.Utilities.Types.DataStatus.INVALID and resultStatus<>EvaluationLibrary.Utilities.Types.DataStatus.NOT_APPLICABLE;
+  result.dataStatus=Integer(resultStatus);
+  result.verdict=Integer(EvaluationLibrary.Utilities.Functions.ToVerdict(resultStatus,qualifiedViolation,false));
+  result.complete=time>=startTime+nSamples*samplePeriod or terminalSeen;
+  result.windowStart=startTime; result.windowStop=startTime+nSamples*samplePeriod;
+  result.observedDuration=min(x.observedDuration,y.observedDuration);
+  result.validDuration=min(x.validDuration,y.validDuration);
+  result.expectedSamples=nSamples; result.receivedSamples=min(x.receivedSamples,y.receivedSamples); result.validSamples=min(x.validSamples,y.validSamples);
+  result.everViolated=qualifiedViolation; result.firstViolationTime=qualifiedViolationTime;
+  result.samplePeriod=samplePeriod; result.evidenceKind=2;
+  result.message=EvaluationLibrary.Utilities.Functions.EvidenceMessage(result.dataStatus,result.verdict,result.valueAvailable)+"; retained specialist; no unsupplied duration or count inferred";
+  result.eventCountsAvailable=false; result.eventCount=0; result.matchedCount=0; result.timedOutCount=0; result.censoredCount=0;
+  result.levelAvailable=false; result.level=0; result.level0Upper=0; result.level1Upper=0;
   x.u = excitation;
   y.u = response;
   x.valid = valid;
@@ -40,41 +69,16 @@ equation
     Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={
         Rectangle(extent={{-90,-85},{90,85}}, lineColor={64,64,64}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
-        Line(points={{-62,55},{-62,-40},{65,-40}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Solid),
-        Line(points={{-56,18},{-53.15,22.4972},{-50.3,26.835},{-47.45,30.8598},{-44.6,34.4291},{-41.75,37.4164},{-38.9,39.7158},{-36.05,41.246},{-33.2,41.9526},{-30.35,41.8108},{-27.5,40.8254},{-24.65,39.0314},{-21.8,36.4923},{-18.95,33.2982},{-16.1,29.5621},{-13.25,25.4164},{-10.4,21.008},{-7.55,16.493},{-4.7,12.0314},{-1.85,7.7813},{1,3.89315},{3.85,0.504753},{6.7,-2.26387},{9.55,-4.31464},{12.4,-5.57489},{15.25,-6},{18.1,-5.57489},{20.95,-4.31464},{23.8,-2.26387},{26.65,0.504753},{29.5,3.89315},{32.35,7.7813},{35.2,12.0314},{38.05,16.493},{40.9,21.008},{43.75,25.4164},{46.6,29.5621},{49.45,33.2982},{52.3,36.4923},{55.15,39.0314},{58,40.8254}}, color={128,128,128}, thickness=1.1, pattern=LinePattern.Solid),
-        Line(points={{-56,-21.3075},{-53.15,-18.8318},{-50.3,-16.0787},{-47.45,-13.1457},{-44.6,-10.1367},{-41.75,-7.15826},{-38.9,-4.31591},{-36.05,-1.71035},{-33.2,0.566115},{-30.35,2.43285},{-27.5,3.82372},{-24.65,4.68945},{-21.8,4.99937},{-18.95,4.74251},{-16.1,3.92796},{-13.25,2.58459},{-10.4,0.759968},{-7.55,-1.48125},{-4.7,-4.05968},{-1.85,-6.88397},{1,-9.85408},{3.85,-12.8648},{6.7,-15.8094},{9.55,-18.5837},{12.4,-21.0893},{15.25,-23.2375},{18.1,-24.9521},{20.95,-26.1726},{23.8,-26.8555},{26.65,-26.9767},{29.5,-26.5319},{32.35,-25.537},{35.2,-24.027},{38.05,-22.0555},{40.9,-19.6924},{43.75,-17.0214},{46.6,-14.1371},{49.45,-11.1416},{52.3,-8.1411},{55.15,-5.24189},{58,-2.54666}}, color={0,0,127}, thickness=1.1, pattern=LinePattern.Solid),
-        Line(points={{-30,-30},{-13,-30}}, color={64,64,64}, thickness=0.65, pattern=LinePattern.Solid, arrow={Arrow.Filled,Arrow.Filled}),
-        Text(extent={{-65,-50},{65,-75}}, textString="G, φ", textColor={64,64,64}, fontSize=0),
+        Line(points={{-60,29},{60,29}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Solid),
+        Line(points={{-60,-20},{60,-20}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Solid),
+        Line(points={{-56,29},{-54.4444,31.2862},{-52.8889,33.5452},{-51.3333,35.7502},{-49.7778,37.875},{-48.2222,39.8942},{-46.6667,41.784},{-45.1111,43.5218},{-43.5556,45.0869},{-42,46.4609},{-40.4444,47.6272},{-38.8889,48.5722},{-37.3333,49.2844},{-35.7778,49.7556},{-34.2222,49.98},{-32.6667,49.955},{-31.1111,49.681},{-29.5556,49.161},{-28,48.4015},{-26.4444,47.4113},{-24.8889,46.2022},{-23.3333,44.7886},{-21.7778,43.1874},{-20.2222,41.4175},{-18.6667,39.5},{-17.1111,37.4577},{-15.5556,35.3148},{-14,33.0969},{-12.4444,30.8303},{-10.8889,28.5419},{-9.33333,26.2589},{-7.77778,24.0086},{-6.22222,21.8176},{-4.66667,19.7119},{-3.11111,17.7167},{-1.55556,15.8556},{0,14.1508},{1.55556,12.6224},{3.11111,11.2888},{4.66667,10.1657},{6.22222,9.26645},{7.77778,8.60182},{9.33333,8.17966},{10.8889,8.005},{12.4444,8.07991},{14,8.40351},{15.5556,8.97194},{17.1111,9.77846},{18.6667,10.8135},{20.2222,12.0647},{21.7778,13.5172},{23.3333,15.1537},{24.8889,16.9549},{26.4444,18.8992},{28,20.9636},{29.5556,23.1236},{31.1111,25.3534},{32.6667,27.6265},{34.2222,29.916},{35.7778,32.1946},{37.3333,34.4352},{38.8889,36.6112},{40.4444,38.6967},{42,40.667},{43.5556,42.4985},{45.1111,44.1696},{46.6667,45.6604},{48.2222,46.9531},{49.7778,48.0325},{51.3333,48.8855},{52.8889,49.5022},{54.4444,49.8752},{56,50}}, color={128,128,128}, thickness=0.95, pattern=LinePattern.Solid),
+        Line(points={{-56,-30.043},{-54.4444,-28.9214},{-52.8889,-27.6938},{-51.3333,-26.3747},{-49.7778,-24.9799},{-48.2222,-23.5258},{-46.6667,-22.0298},{-45.1111,-20.5097},{-43.5556,-18.9836},{-42,-17.4695},{-40.4444,-15.9855},{-38.8889,-14.5493},{-37.3333,-13.1778},{-35.7778,-11.8874},{-34.2222,-10.6935},{-32.6667,-9.61015},{-31.1111,-8.65034},{-29.5556,-7.82546},{-28,-7.14529},{-26.4444,-6.61794},{-24.8889,-6.24966},{-23.3333,-6.04483},{-21.7778,-6.0059},{-20.2222,-6.13332},{-18.6667,-6.42557},{-17.1111,-6.87919},{-15.5556,-7.48878},{-14,-8.2471},{-12.4444,-9.14512},{-10.8889,-10.1722},{-9.33333,-11.3161},{-7.77778,-12.5632},{-6.22222,-13.8987},{-4.66667,-15.3068},{-3.11111,-16.7706},{-1.55556,-18.2728},{0,-19.7956},{1.55556,-21.3208},{3.11111,-22.8303},{4.66667,-24.3061},{6.22222,-25.7308},{7.77778,-27.0873},{9.33333,-28.3596},{10.8889,-29.5325},{12.4444,-30.5921},{14,-31.5258},{15.5556,-32.3224},{17.1111,-32.9726},{18.6667,-33.4686},{20.2222,-33.8045},{21.7778,-33.9763},{23.3333,-33.9819},{24.8889,-33.8213},{26.4444,-33.4965},{28,-33.0112},{29.5556,-32.3712},{31.1111,-31.5842},{32.6667,-30.6594},{34.2222,-29.608},{35.7778,-28.4423},{37.3333,-27.1763},{38.8889,-25.825},{40.4444,-24.4044},{42,-22.9315},{43.5556,-21.4237},{45.1111,-19.899},{46.6667,-18.3755},{48.2222,-16.8713},{49.7778,-15.4043},{51.3333,-13.992},{52.8889,-12.651},{54.4444,-11.3974},{56,-10.2461}}, color={0,0,127}, thickness=0.95, pattern=LinePattern.Solid),
+        Line(points={{-56,4},{-56,-42}}, color={128,128,128}, thickness=0.45, pattern=LinePattern.Dot),
+        Line(points={{-44.6,4},{-44.6,-42}}, color={128,128,128}, thickness=0.45, pattern=LinePattern.Dot),
+        Line(points={{-56,-42},{-44.6,-42}}, color={64,64,64}, thickness=0.6, pattern=LinePattern.Solid, arrow={Arrow.Filled,Arrow.Filled}),
+        Text(extent={{-65,-50},{65,-75}}, textString="Ay/Ax, Δφ", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),
-    Documentation(info="<html><p><b>Purpose</b> 以共同采样窗估计单频增益和相位差</p><p><b>Interfaces</b> Modelica.Blocks.Interfaces.RealInput excitation; Modelica.Blocks.Interfaces.RealInput response; Modelica.Blocks.Interfaces.BooleanInput valid \"Common validity flag\"; Modelica.Blocks.Interfaces.RealOutput gain \"Output amplitude / input amplitude\"; Modelica.Blocks.Interfaces.RealOutput phaseDifference(unit=\"rad\") \"Output minus input phase in [-pi,pi]\"; Modelica.Blocks.Interfaces.BooleanOutput gainDefined; Modelica.Blocks.Interfaces.BooleanOutput phaseDefined; Modelica.Blocks.Interfaces.RealOutput frequency(unit=\"Hz\"); output EvaluationLibrary.Utilities.Types.DataStatus dataState</p><p><b>Parameters</b> parameter Integer nSamples(min=4,max=1024) = 200; parameter Modelica.Units.SI.Time startTime = 0; parameter Modelica.Units.SI.Time samplePeriod(min=Modelica.Constants.small) = 0.005; parameter Integer bin(min=1,max=div(nSamples-1,2)) = min(8,div(nSamples-1,2)); parameter EvaluationLibrary.Utilities.Types.SpectralWindow window = EvaluationLibrary.Utilities.Types.SpectralWindow.Rectangular; parameter Real minInputAmplitude(min=Modelica.Constants.small) = 1e-6 \"Amplitude floor, input units\"; parameter Real minOutputAmplitude(min=Modelica.Constants.small) = 1e-6 \"Phase amplitude floor, output units\"</p><p><b>Behavior</b> 以共同采样窗估计单频增益和相位差</p><p><b>Initialization</b> Use the declared initial values and host state modifiers.</p><p><b>Activation and recovery</b> Not applicable.</p><p><b>Limitations</b> Use the declared parameter range. The catalog identifies simulation coverage.</p><p><b>Observables</b> Inspect the declared output variables.</p><p><b>Evidence kind</b> Inspect applicability, coverage and validity before interpreting the result.</p><p><b>Example</b> <a href=\"modelica://EvaluationLibrary.Examples.HarmonicMeasurements\">EvaluationLibrary.Examples.HarmonicMeasurements</a></p>
-<p>以共同采样窗估计单频增益和相位差</p>
-<p><b>行为</b> 共同窗口结束后估计输出与输入的同频幅值比。两路幅值均充分时给最短相位差。</p>
-<p><b>最小用法</b> 对已进入稳态的正弦激励和响应设置整周期采样窗。</p>
-<p><b>适用边界</b> 这是单频观测的频率响应特征。暂态、非线性和非相干采样会改变结果。</p>
-<p>参数的类型、默认值和取值见下列声明。</p>
-<ul>
-<li><code>Integer nSamples(min=4,max=1024) = 200</code></li>
-<li><code>Modelica.Units.SI.Time startTime = 0</code></li>
-<li><code>Modelica.Units.SI.Time samplePeriod(min=Modelica.Constants.small) = 0.005</code></li>
-<li><code>Integer bin(min=1,max=div(nSamples-1,2)) = min(8,div(nSamples-1,2))</code></li>
-<li><code>EvaluationLibrary.Utilities.Types.SpectralWindow window = EvaluationLibrary.Utilities.Types.SpectralWindow.Rectangular</code></li>
-<li><code>Real minInputAmplitude(min=Modelica.Constants.small) = 1e-6 \"Amplitude floor, input units\"</code></li>
-<li><code>Real minOutputAmplitude(min=Modelica.Constants.small) = 1e-6 \"Phase amplitude floor, output units\"</code></li>
-</ul>
-<p>接口及方向</p>
-<ul>
-<li><code>Modelica.Blocks.Interfaces.RealInput excitation</code></li>
-<li><code>Modelica.Blocks.Interfaces.RealInput response</code></li>
-<li><code>Modelica.Blocks.Interfaces.BooleanInput valid \"Common validity flag\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.RealOutput gain \"Output amplitude / input amplitude\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.RealOutput phaseDifference(unit=\"rad\") \"Output minus input phase in [-pi,pi]\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.BooleanOutput gainDefined</code></li>
-<li><code>Modelica.Blocks.Interfaces.BooleanOutput phaseDefined</code></li>
-<li><code>Modelica.Blocks.Interfaces.RealOutput frequency(unit=\"Hz\")</code></li>
-<li><code>output EvaluationLibrary.Utilities.Types.DataStatus dataState</code></li>
-</ul>
-<p><a href=\"modelica://EvaluationLibrary.Examples.AnalyticStatistics\">ElectricalPowerQualityEvaluation</a> 提供同域宿主参考。</p>
-</html>"));
+    Documentation(info="<html><p>Capture excitation and response on the same ordered finite grid and coherent Fourier bin. Defaults are nSamples=200, startTime=0 s and samplePeriod=0.02 s. bin is positive and below Nyquist; the bin frequency is fixed by record duration. Gain requires minInputAmplitude (default 1e-6 in input units); phase also requires minOutputAmplitude (default 1e-6 in output units). Return dimensionless gain and radian phase difference with independent availability; invalid samples cannot form complete frequency evidence.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
 end ToneResponse;

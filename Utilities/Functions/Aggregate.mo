@@ -1,14 +1,14 @@
 within EvaluationLibrary.Utilities.Functions;
 function Aggregate "Combine required verdict codes using an explicit priority"
   extends Modelica.Icons.Function;
-input Integer codes[:];
-  input Boolean required[size(codes,1)];
-  output EvaluationLibrary.Utilities.Types.Verdict verdict;
+input Integer codes[:] "Codes";
+  input Boolean required[size(codes,1)] "Which child requirements enter the overall conjunction";
+  output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement decision independent of observation completeness";
 protected
-  Integer applicableCount;
-  Boolean invalid;
-  Boolean violated;
-  Boolean undecided;
+  Integer applicableCount "Applicable count";
+  Boolean invalid "Invalid";
+  Boolean violated "Violated";
+  Boolean undecided "Undecided";
 algorithm
   applicableCount:=0; invalid:=false; violated:=false; undecided:=false;
   for i in 1:size(codes,1) loop
@@ -25,14 +25,19 @@ algorithm
       graphics={
         Ellipse(extent={{-100,-100},{100,100}}, lineColor={108,88,49}, fillColor={255,215,136}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5),
         Text(extent={{-18,79},{18,47}}, textString="f", textColor={108,88,49}, fontSize=0),
-        Line(points={{-42.16,23.16},{-14.96,23.16},{-2.72,4.12}}, color={128,128,128}, thickness=0.8, pattern=LinePattern.Solid),
-        Line(points={{-42.16,4.12},{-2.72,4.12}}, color={128,128,128}, thickness=0.8, pattern=LinePattern.Solid),
-        Line(points={{-42.16,-14.92},{-14.96,-14.92},{-2.72,4.12}}, color={128,128,128}, thickness=0.8, pattern=LinePattern.Solid),
-        Rectangle(extent={{-3.4,-12.2},{25.84,21.12}}, lineColor={64,64,64}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
-        Text(extent={{0.68,17.72},{21.76,-8.12}}, textString="&", textColor={0,0,127}, fontSize=0),
-        Line(points={{25.84,4.12},{44.2,4.12}}, color={0,0,127}, thickness=0.9, pattern=LinePattern.Solid, arrow={Arrow.None,Arrow.Filled}),
-        Text(extent={{-65,-55},{65,-78}}, textString="aggregate", textColor={108,88,49}, fontSize=0),
-        Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
+        Rectangle(extent={{-57.868,7.871},{-30.636,35.103}}, lineColor={64,64,64}, fillColor={245,245,245}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
+        Text(extent={{-55.315,32.55},{-33.189,10.424}}, textString="c", textColor={64,64,64}, fontSize=0),
+        Line(points={{-28.934,21.487},{-7.659,21.487},{10.212,-9.149}}, color={128,128,128}, thickness=0.7, pattern=LinePattern.Solid),
+        Rectangle(extent={{-57.868,-22.765},{-30.636,4.467}}, lineColor={64,64,64}, fillColor={245,245,245}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
+        Text(extent={{-55.315,1.914},{-33.189,-20.212}}, textString="c", textColor={64,64,64}, fontSize=0),
+        Line(points={{-28.934,-9.149},{-7.659,-9.149},{10.212,-9.149}}, color={128,128,128}, thickness=0.7, pattern=LinePattern.Solid),
+        Rectangle(extent={{-57.868,-53.401},{-30.636,-26.169}}, lineColor={64,64,64}, fillColor={245,245,245}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
+        Text(extent={{-55.315,-28.722},{-33.189,-50.848}}, textString="c", textColor={64,64,64}, fontSize=0),
+        Line(points={{-28.934,-39.785},{-7.659,-39.785},{10.212,-9.149}}, color={128,128,128}, thickness=0.7, pattern=LinePattern.Solid),
+        Polygon(points={{15.318,-9.149},{33.189,10.424},{51.06,-9.149},{33.189,-28.722},{15.318,-9.149}}, lineColor={64,64,64}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5),
+        Text(extent={{22.126,1.914},{44.252,-20.212}}, textString="V", textColor={64,64,64}, fontSize=0),
+        Line(points={{-64.676,26.593},{-64.676,-46.593}}, color={64,64,64}, thickness=0.7, pattern=LinePattern.Solid, arrow={Arrow.None,Arrow.Filled}),
+        Text(extent={{-51.911,-60.209},{51.911,-78.08}}, textString="priority", textColor={64,64,64}, fontSize=0)
       }),
-    Documentation(info="<html><p><b>Purpose</b> Combine required verdict codes using an explicit priority.</p><p><b>Interfaces</b> input Integer codes[:]; input Boolean required[size(codes,1)]; output EvaluationLibrary.Utilities.Types.Verdict verdict</p><p><b>Parameters</b> No tuning parameters; use the declared input contract.</p><p><b>Behavior</b> Combine required verdict codes using an explicit priority</p><p><b>Initialization</b> Evaluated from the current inputs and parameter bindings.</p><p><b>Activation and recovery</b> Not applicable.</p><p><b>Limitations</b> Outputs retain the units declared at the interface. Numerical values depend on the supplied input and parameter range.</p><p><b>Observables</b> Public outputs and the stated input conditions.</p></html>"));
+    Documentation(info="<html><p>Aggregate. Inputs retain the physical units or logical meaning stated by their declarations. Domain assertions and explicit availability flags are part of the contract.</p></html>"));
 end Aggregate;

@@ -1,5 +1,14 @@
 within EvaluationLibrary.Statistics;
-block ZeroCrossingOscillation "由相同方向穿越估计振荡周期"
+block ZeroCrossingOscillation "Qualified zero crossings and estimated oscillation period"
+  parameter String metricId=getInstanceName() "Stable identity of this retained specialist";
+  parameter String requirementId="" "Requirement identity, when configured";
+  parameter String requirementVersion="" "Interpreted requirement version";
+  parameter String unitName="s" "Engineering unit of the reported specialist value";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete specialist result" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
+  Boolean terminalSeen(start=false,fixed=true) "Terminal seen";
+  discrete Boolean qualifiedViolation(start=false,fixed=true) "Qualified violation";
+  discrete Real qualifiedViolationTime(start=0,fixed=true) "Qualified violation time";
+  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Result status";
   parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive window start, s";
   parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive window end, s";
   parameter Boolean applicable = true "Whether the analysis applies";
@@ -14,13 +23,33 @@ block ZeroCrossingOscillation "由相同方向穿越估计振荡周期"
   Modelica.Blocks.Interfaces.IntegerOutput crossings(start=0,fixed=true) "Observed upward crossings" annotation(Placement(transformation(extent={{94,-6},{106,6}}), iconTransformation(extent={{94,-6},{106,6}})));
   Modelica.Blocks.Interfaces.RealOutput meanPeriod(unit="s") "First-to-last span divided by complete cycles" annotation(Placement(transformation(extent={{94,-47},{106,-35}}), iconTransformation(extent={{94,-47},{106,-35}})));
   Modelica.Blocks.Interfaces.BooleanOutput defined "At least one complete observed cycle" annotation(Placement(transformation(extent={{94,-88},{106,-76}}), iconTransformation(extent={{94,-88},{106,-76}})));
-  output Modelica.Units.SI.Time firstCrossing(start=0,fixed=true);
-  output Modelica.Units.SI.Time lastCrossing(start=0,fixed=true);
+  output Modelica.Units.SI.Time firstCrossing(start=0,fixed=true) "First crossing";
+  output Modelica.Units.SI.Time lastCrossing(start=0,fixed=true) "Last crossing";
 protected
-  EvaluationLibrary.Utilities.Internal.ContinuousEvidence evidence(windowStart=windowStart,windowEnd=windowEnd,applicable=applicable);
+  EvaluationLibrary.Utilities.Internal.ContinuousEvidence evidence(windowStart=windowStart,windowEnd=windowEnd,applicable=applicable) "Evidence";
   Boolean dataOK "Validity combined with the metric data domain";
-  Boolean high;
+  Boolean high "High";
 equation
+  when terminal() then terminalSeen=true; end when;
+  resultStatus=if (dataState)==EvaluationLibrary.Utilities.Types.DataStatus.PENDING and terminalSeen then EvaluationLibrary.Utilities.Types.DataStatus.INCOMPLETE else (dataState);
+  when {initial(),false} then
+    qualifiedViolation=pre(qualifiedViolation) or false;
+    qualifiedViolationTime=if not pre(qualifiedViolation) and false then time else pre(qualifiedViolationTime);
+  end when;
+  result.metricId=metricId; result.requirementId=requirementId; result.requirementVersion=requirementVersion; result.unit=unitName;
+  result.value=meanPeriod; result.valueAvailable=(defined) and resultStatus<>EvaluationLibrary.Utilities.Types.DataStatus.INVALID and resultStatus<>EvaluationLibrary.Utilities.Types.DataStatus.NOT_APPLICABLE;
+  result.dataStatus=Integer(resultStatus);
+  result.verdict=Integer(EvaluationLibrary.Utilities.Functions.ToVerdict(resultStatus,qualifiedViolation,false));
+  result.complete=time>=windowEnd or terminalSeen;
+  result.windowStart=windowStart; result.windowStop=windowEnd;
+  result.observedDuration=evidence.totalObservedDuration;
+  result.validDuration=observedDuration;
+  result.expectedSamples=0; result.receivedSamples=0; result.validSamples=0;
+  result.everViolated=qualifiedViolation; result.firstViolationTime=qualifiedViolationTime;
+  result.samplePeriod=0; result.evidenceKind=1;
+  result.message=EvaluationLibrary.Utilities.Functions.EvidenceMessage(result.dataStatus,result.verdict,result.valueAvailable)+"; retained specialist; no unsupplied duration or count inferred";
+  result.eventCountsAvailable=false; result.eventCount=0; result.matchedCount=0; result.timedOutCount=0; result.censoredCount=0;
+  result.levelAvailable=false; result.level=0; result.level0Upper=0; result.level1Upper=0;
   evidence.dataOK = dataOK;
   dataState = evidence.dataState;
   inWindow = evidence.inWindow;
@@ -44,42 +73,18 @@ equation
     Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={
         Rectangle(extent={{-90,-85},{90,85}}, lineColor={64,64,64}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
-        Line(points={{-62,55},{-62,-40},{65,-40}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Solid),
-        Line(points={{-58,6},{62,6}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Dash),
-        Line(points={{-55,6},{-52.2,14.3435},{-49.4,21.8702},{-46.6,27.8435},{-43.8,31.6785},{-41,33},{-38.2,31.6785},{-35.4,27.8435},{-32.6,21.8702},{-29.8,14.3435},{-27,6},{-24.2,-2.34346},{-21.4,-9.8702},{-18.6,-15.8435},{-15.8,-19.6785},{-13,-21},{-10.2,-19.6785},{-7.4,-15.8435},{-4.6,-9.8702},{-1.8,-2.34346},{1,6},{3.8,14.3435},{6.6,21.8702},{9.4,27.8435},{12.2,31.6785},{15,33},{17.8,31.6785},{20.6,27.8435},{23.4,21.8702},{26.2,14.3435},{29,6},{31.8,-2.34346},{34.6,-9.8702},{37.4,-15.8435},{40.2,-19.6785},{43,-21},{45.8,-19.6785},{48.6,-15.8435},{51.4,-9.8702},{54.2,-2.34346},{57,6}}, color={0,0,127}, thickness=1.1, pattern=LinePattern.Solid),
-        Ellipse(extent={{-58,3},{-52,9}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4),
-        Ellipse(extent={{-2,3},{4,9}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4),
-        Ellipse(extent={{54,3},{60,9}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4),
-        Line(points={{-55,-26},{1,-26}}, color={64,64,64}, thickness=0.65, pattern=LinePattern.Solid, arrow={Arrow.Filled,Arrow.Filled}),
-        Text(extent={{-65,-50},{65,-75}}, textString="period", textColor={64,64,64}, fontSize=0),
+        Line(points={{-63,0},{65,0}}, color={128,128,128}, thickness=0.6, pattern=LinePattern.Solid),
+        Line(points={{-56,-18.1898},{-54.8,-15.0522},{-53.6,-11.5863},{-52.4,-7.86752},{-51.2,-3.97715},{-50,0},{-48.8,3.97715},{-47.6,7.86752},{-46.4,11.5863},{-45.2,15.0522},{-44,18.1898},{-42.8,20.9305},{-41.6,23.2146},{-40.4,24.9922},{-39.2,26.2246},{-38,26.8848},{-36.8,26.9585},{-35.6,26.4441},{-34.4,25.3527},{-33.2,23.7082},{-32,21.5465},{-30.8,18.9147},{-29.6,15.8702},{-28.4,12.4795},{-27.2,8.81655},{-26,4.96124},{-24.8,0.99769},{-23.6,-2.98762},{-22.4,-6.90775},{-21.2,-10.6772},{-20,-14.2137},{-18.8,-17.4401},{-17.6,-20.286},{-16.4,-22.6893},{-15.2,-24.5976},{-14,-25.9693},{-12.8,-26.7744},{-11.6,-26.9954},{-10.4,-26.6274},{-9.2,-25.6785},{-8,-24.1694},{-6.8,-22.133},{-5.6,-19.6137},{-4.4,-16.6665},{-3.2,-13.3557},{-2,-9.75352},{-0.8,-5.93855},{0.4,-1.99402},{1.6,1.99402},{2.8,5.93855},{4,9.75352},{5.2,13.3557},{6.4,16.6665},{7.6,19.6137},{8.8,22.133},{10,24.1694},{11.2,25.6785},{12.4,26.6274},{13.6,26.9954},{14.8,26.7744},{16,25.9693},{17.2,24.5976},{18.4,22.6893},{19.6,20.286},{20.8,17.4401},{22,14.2137},{23.2,10.6772},{24.4,6.90775},{25.6,2.98762},{26.8,-0.99769},{28,-4.96124},{29.2,-8.81655},{30.4,-12.4795},{31.6,-15.8702},{32.8,-18.9147},{34,-21.5465},{35.2,-23.7082},{36.4,-25.3527},{37.6,-26.4441},{38.8,-26.9585},{40,-26.8848},{41.2,-26.2246},{42.4,-24.9922},{43.6,-23.2146},{44.8,-20.9305},{46,-18.1898},{47.2,-15.0522},{48.4,-11.5863},{49.6,-7.86752},{50.8,-3.97715},{52,-1.32262e-14},{53.2,3.97715},{54.4,7.86752},{55.6,11.5863},{56.8,15.0522},{58,18.1898}}, color={0,0,127}, thickness=0.95, pattern=LinePattern.Solid),
+        Line(points={{-50,-35},{-50,44}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Dot),
+        Line(points={{1,-35},{1,44}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Dot),
+        Line(points={{-50,48},{1,48}}, color={64,64,64}, thickness=0.65, pattern=LinePattern.Solid, arrow={Arrow.Filled,Arrow.Filled}),
+        Text(extent={{-37,74},{-11,52}}, textString="T", textColor={64,64,64}, fontSize=0),
+        Ellipse(extent={{-53.4,-3.4},{-46.6,3.4}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.45),
+        Ellipse(extent={{-2.4,-3.4},{4.4,3.4}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.45),
+        Ellipse(extent={{48.6,-3.4},{55.4,3.4}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.45),
+        Text(extent={{-65,-50},{65,-75}}, textString="N↑, period", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),
-    Documentation(info="<html><p><b>Purpose</b> 由相同方向穿越估计振荡周期</p><p><b>Interfaces</b> Modelica.Blocks.Interfaces.BooleanInput valid \"Host-provided input validity\"; Modelica.Blocks.Interfaces.BooleanOutput inWindow \"Current point lies in applicable window\"; output EvaluationLibrary.Utilities.Types.DataStatus dataState \"Collection and data validity state\"; Modelica.Blocks.Interfaces.RealOutput observedDuration(unit=\"s\") \"Accumulated valid duration\"; Modelica.Blocks.Interfaces.RealInput u \"Observed waveform\"; Modelica.Blocks.Interfaces.IntegerOutput crossings(start=0,fixed=true) \"Observed upward crossings\"; Modelica.Blocks.Interfaces.RealOutput meanPeriod(unit=\"s\") \"First-to-last span divided by complete cycles\"; Modelica.Blocks.Interfaces.BooleanOutput defined \"At least one complete observed cycle\"; output Modelica.Units.SI.Time firstCrossing(start=0,fixed=true); output Modelica.Units.SI.Time lastCrossing(start=0,fixed=true)</p><p><b>Parameters</b> parameter Modelica.Units.SI.Time windowStart = 0 \"Inclusive window start, s\"; parameter Modelica.Units.SI.Time windowEnd = 5 \"Exclusive window end, s\"; parameter Boolean applicable = true \"Whether the analysis applies\"; parameter Real level = 0 \"Reference level in the signal unit\"</p><p><b>Behavior</b> 由相同方向穿越估计振荡周期</p><p><b>Initialization</b> Use the declared initial values and host state modifiers.</p><p><b>Activation and recovery</b> Not applicable.</p><p><b>Limitations</b> Use the declared parameter range. The catalog identifies simulation coverage.</p><p><b>Observables</b> Inspect the declared output variables.</p><p><b>Evidence kind</b> Inspect applicability, coverage and validity before interpreting the result.</p><p><b>Example</b> <a href=\"modelica://EvaluationLibrary.Examples.AnalyticStatistics\">EvaluationLibrary.Examples.AnalyticStatistics</a></p>
-<p>由相同方向穿越估计振荡周期</p>
-<p><b>行为</b> 只累计从低到严格超过 level 的自然上穿，窗入口已有高电平不计一次穿越。</p>
-<p><b>最小用法</b> 将振荡响应接 u，level 设为振荡中心，读取 meanPeriod。</p>
-<p><b>适用边界</b> 要求周期内一次有效上穿。多重穿越的噪声应由宿主先处理。</p>
-<p>参数的类型、默认值和取值见下列声明。</p>
-<ul>
-<li><code>Modelica.Units.SI.Time windowStart = 0 \"Inclusive window start, s\"</code></li>
-<li><code>Modelica.Units.SI.Time windowEnd = 5 \"Exclusive window end, s\"</code></li>
-<li><code>Boolean applicable = true \"Whether the analysis applies\"</code></li>
-<li><code>Real level = 0 \"Reference level in the signal unit\"</code></li>
-</ul>
-<p>接口及方向</p>
-<ul>
-<li><code>Modelica.Blocks.Interfaces.BooleanInput valid \"Host-provided input validity\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.BooleanOutput inWindow \"Current point lies in applicable window\"</code></li>
-<li><code>output EvaluationLibrary.Utilities.Types.DataStatus dataState \"Collection and data validity state\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.RealOutput observedDuration(unit=\"s\") \"Accumulated valid duration\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.RealInput u \"Observed waveform\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.IntegerOutput crossings(start=0,fixed=true) \"Observed upward crossings\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.RealOutput meanPeriod(unit=\"s\") \"First-to-last span divided by complete cycles\"</code></li>
-<li><code>Modelica.Blocks.Interfaces.BooleanOutput defined \"At least one complete observed cycle\"</code></li>
-<li><code>output Modelica.Units.SI.Time firstCrossing(start=0,fixed=true)</code></li>
-<li><code>output Modelica.Units.SI.Time lastCrossing(start=0,fixed=true)</code></li>
-</ul>
-<p><a href=\"modelica://EvaluationLibrary.Examples.PairedPerformance\">MechanicalResponseEvaluation</a> 提供同域宿主参考。</p>
-</html>"));
+    Documentation(info="<html><p>Observe rising crossings of u above level, whose default is zero in the input unit. Initial truth is not counted as a crossing. At least two accepted crossings are required; meanPeriod is the first-to-last span divided by crossings minus one, in seconds. Nonperiodic signals still yield only this finite observed estimate.</p><p>The fixed observation defaults to [0,5) s. valid is host-provided and false validity or a failed numeric-domain check inside the window latches INVALID. Positive valid duration is needed for duration-normalized values. A normal stop before full observation gives an INCOMPLETE complete result; DataStatus and Verdict remain separate.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
 end ZeroCrossingOscillation;

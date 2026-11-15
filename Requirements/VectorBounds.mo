@@ -1,47 +1,51 @@
 within EvaluationLibrary.Requirements;
 block VectorBounds "Evaluate independent finite numeric channel bounds"
-parameter EvaluationLibrary.Utilities.Types.WindowMode windowMode=EvaluationLibrary.Utilities.Types.WindowMode.FixedTime;
-  parameter Modelica.Units.SI.Time windowStart=0;
-  parameter Modelica.Units.SI.Time windowStop=5;
-  parameter Boolean applicable=true;
-  parameter Boolean useValidInput=false;
+  parameter String metricId=getInstanceName() "Stable metric identity";
+  parameter String requirementId="" "Requirement identity; empty for a statistic";
+  parameter String requirementVersion="" "Interpreted requirement version";
+  parameter String unitName="1" "Engineering unit of the reported value";
+parameter EvaluationLibrary.Utilities.Types.WindowMode windowMode=EvaluationLibrary.Utilities.Types.WindowMode.FixedTime "Fixed-time or first externally gated observation window";
+  parameter Modelica.Units.SI.Time windowStart=0 "Inclusive observation start in seconds";
+  parameter Modelica.Units.SI.Time windowStop=5 "Exclusive observation stop in seconds";
+  parameter Boolean applicable=true "Whether this evaluation applies";
+  parameter Boolean useValidInput=false "Expose the host-provided validity connector";
 
-  parameter Modelica.Units.SI.Time samplePeriod(min=0)=0.01;
-  parameter Modelica.Units.SI.Time sampleStart=0;
-  Modelica.Blocks.Interfaces.BooleanInput valid if useValidInput annotation(Placement(transformation(origin={0,100},extent={{-10,-10},{10,10}}),iconTransformation(origin={0,100},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanInput window if windowMode==EvaluationLibrary.Utilities.Types.WindowMode.ExternalSingle annotation(Placement(transformation(origin={-100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,70},extent={{-10,-10},{10,10}})));
-  output EvaluationLibrary.Utilities.Types.DataStatus dataStatus;
-  output EvaluationLibrary.Utilities.Types.Verdict verdict;
-  output Boolean complete;
-  output Boolean everViolated(start=false,fixed=true);
-  output Modelica.Units.SI.Time firstViolationTime(start=0,fixed=true);
-  EvaluationLibrary.Utilities.Interfaces.MetricOutput result annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
+  parameter Modelica.Units.SI.Time samplePeriod(min=0)=0.01 "Positive uniform sampling interval in seconds";
+  parameter Modelica.Units.SI.Time sampleStart=0 "Uniform sample grid origin in seconds";
+  Modelica.Blocks.Interfaces.BooleanInput valid if useValidInput "Host declares the observed inputs valid" annotation(Placement(transformation(origin={0,100},extent={{-10,-10},{10,10}}),iconTransformation(origin={0,100},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanInput window if windowMode==EvaluationLibrary.Utilities.Types.WindowMode.ExternalSingle "External observation gate; only the first contiguous interval is accepted" annotation(Placement(transformation(origin={-100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,70},extent={{-10,-10},{10,10}})));
+  output EvaluationLibrary.Utilities.Types.DataStatus dataStatus "Evidence qualification independent of requirement verdict";
+  output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement decision independent of observation completeness";
+  output Boolean complete "Collection has closed; inspect DataStatus before assuming full evidence";
+  output Boolean everViolated(start=false,fixed=true) "A qualified violation witness exists";
+  output Modelica.Units.SI.Time firstViolationTime(start=0,fixed=true) "First qualified violation instant; meaningful only when everViolated";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete directly reportable evidence result" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
 
-  parameter Integer n(min=1)=3;
-  parameter Real lower[n]=fill(0,n);
-  parameter Real upper[n]=fill(1,n);
-  parameter Real tolerance[n]=fill(0,n);
-  parameter String channelUnit[n]=fill("1",n);
-  parameter Boolean useChannelValid=false;
-    Modelica.Blocks.Interfaces.RealInput u[n] annotation(Placement(transformation(origin={-100,42},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,42},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanInput channelValid[n] if useChannelValid annotation(Placement(transformation(origin={-100,14},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,14},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.IntegerOutput perChannelVerdict[n] annotation(Placement(transformation(origin={100,23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,23.33333},extent={{-10,-10},{10,10}})));
-  output Boolean channelViolated[n](each start=false,each fixed=true);
-  output Modelica.Units.SI.Time channelFirstViolation[n](each start=0,each fixed=true);
-  Modelica.Blocks.Interfaces.RealOutput value annotation(Placement(transformation(origin={100,-23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-23.33333},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanOutput available annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
+  parameter Integer n(min=1)=3 "Number of channels, records or configured items; at least one";
+  parameter Real lower[n]=fill(0,n) "Inclusive lower acceptance bound";
+  parameter Real upper[n]=fill(1,n) "Inclusive upper acceptance bound";
+  parameter Real tolerance[n]=fill(0,n) "Nonnegative numerical acceptance allowance";
+  parameter String channelUnit[n]=fill("1",n) "Engineering unit of each simultaneous channel";
+  parameter Boolean useChannelValid=false "Expose per-channel validity flags";
+    Modelica.Blocks.Interfaces.RealInput u[n] "Observed real signal in the declared engineering unit" annotation(Placement(transformation(origin={-100,42},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,42},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanInput channelValid[n] if useChannelValid "Channel valid" annotation(Placement(transformation(origin={-100,14},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,14},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.IntegerOutput perChannelVerdict[n] "Per channel verdict" annotation(Placement(transformation(origin={100,23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,23.33333},extent={{-10,-10},{10,10}})));
+  output Boolean channelViolated[n](each start=false,each fixed=true) "Channel violated";
+  output Modelica.Units.SI.Time channelFirstViolation[n](each start=0,each fixed=true) "Channel first violation";
+  Modelica.Blocks.Interfaces.RealOutput value "Numerical metric; meaningful only when available" annotation(Placement(transformation(origin={100,-23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-23.33333},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanOutput available "The numerical output exists in the current data domain" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
 protected
-  Modelica.Blocks.Interfaces.BooleanInput trusted annotation(Placement(transformation(origin={-100,-14},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-14},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanInput externalWindow annotation(Placement(transformation(origin={-100,-42},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-42},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanInput trusted "Trusted" annotation(Placement(transformation(origin={-100,-14},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-14},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanInput externalWindow "External window" annotation(Placement(transformation(origin={-100,-42},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-42},extent={{-10,-10},{10,10}})));
   EvaluationLibrary.Utilities.Internal.WindowEvidence gate(windowMode=windowMode,windowStart=windowStart,windowStop=windowStop,
-    sampled=false,samplePeriod=samplePeriod,sampleStart=sampleStart,applicable=applicable);
-  Boolean dataOK;
-  Boolean violationNow;
-  Modelica.Blocks.Interfaces.BooleanInput validity[n] annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
-  Boolean qualifiedChannel[n];
-  Boolean violation[n];
-  Boolean invalid[n];
-  discrete Boolean invalidSeen[n](each start=false,each fixed=true);
+    sampled=false,samplePeriod=samplePeriod,sampleStart=sampleStart,applicable=applicable) "Gate";
+  Boolean dataOK "Data ok";
+  Boolean violationNow "Violation now";
+  Modelica.Blocks.Interfaces.BooleanInput validity[n] "Validity" annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
+  Boolean qualifiedChannel[n] "Qualified channel";
+  Boolean violation[n] "Violation";
+  Boolean invalid[n] "Invalid";
+  discrete Boolean invalidSeen[n](each start=false,each fixed=true) "Invalid seen";
 initial equation
   assert(n>=1,"At least one channel is required.");
   for i in 1:n loop
@@ -71,6 +75,24 @@ equation
   result.expectedSamples=gate.expectedSamples;
   result.receivedSamples=gate.receivedSamples;
   result.validSamples=gate.validSamples;
+  result.metricId=metricId;
+  result.requirementId=requirementId;
+  result.requirementVersion=requirementVersion;
+  result.unit=unitName;
+  result.windowStart=gate.actualStart;
+  result.windowStop=gate.actualStop;
+  result.observedDuration=gate.observedDuration;
+  result.samplePeriod=if gate.sampled then samplePeriod else 0;
+  result.evidenceKind=Integer(EvaluationLibrary.Utilities.Types.EvidenceKind.Continuous);
+  result.message=EvaluationLibrary.Utilities.Functions.EvidenceMessage(result.dataStatus,result.verdict,result.valueAvailable);
+  result.eventCountsAvailable=false; result.eventCount=0;
+  result.matchedCount=0;
+  result.timedOutCount=0;
+  result.censoredCount=0;
+  result.levelAvailable=false;
+  result.level=0;
+  result.level0Upper=0;
+  result.level1Upper=0;
   result.complete=complete;
 
   connect(channelValid,validity);
@@ -102,20 +124,15 @@ algorithm
   annotation(Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={
         Rectangle(extent={{-90,-85},{90,85}}, lineColor={64,64,64}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
-        Line(points={{-48,-22},{46,-22}}, color={128,128,128}, thickness=0.7, pattern=LinePattern.Solid),
-        Line(points={{-48,-31},{-48,-13}}, color={128,128,128}, thickness=0.6, pattern=LinePattern.Solid),
-        Line(points={{46,-31},{46,-13}}, color={128,128,128}, thickness=0.6, pattern=LinePattern.Solid),
-        Line(points={{-48,10},{46,10}}, color={128,128,128}, thickness=0.7, pattern=LinePattern.Solid),
-        Line(points={{-48,1},{-48,19}}, color={128,128,128}, thickness=0.6, pattern=LinePattern.Solid),
-        Line(points={{46,1},{46,19}}, color={128,128,128}, thickness=0.6, pattern=LinePattern.Solid),
-        Line(points={{-48,42},{46,42}}, color={128,128,128}, thickness=0.7, pattern=LinePattern.Solid),
-        Line(points={{-48,33},{-48,51}}, color={128,128,128}, thickness=0.6, pattern=LinePattern.Solid),
-        Line(points={{46,33},{46,51}}, color={128,128,128}, thickness=0.6, pattern=LinePattern.Solid),
-        Ellipse(extent={{-24,38},{-16,46}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4),
-        Ellipse(extent={{2,6},{10,14}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4),
-        Ellipse(extent={{56,-26},{64,-18}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.4),
-        Text(extent={{-65,-50},{65,-75}}, textString="bounds[n]", textColor={64,64,64}, fontSize=0),
+        Rectangle(extent={{-60,25},{60,49}}, lineColor={128,128,128}, fillColor={245,245,245}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.45, radius=0),
+        Rectangle(extent={{-42,-8},{49,16}}, lineColor={128,128,128}, fillColor={245,245,245}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.45, radius=0),
+        Rectangle(extent={{-55,-41},{32,-17}}, lineColor={128,128,128}, fillColor={245,245,245}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.45, radius=0),
+        Ellipse(extent={{-15.7,33.3},{-8.3,40.7}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.55),
+        Ellipse(extent={{20.3,0.3},{27.7,7.7}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.55),
+        Ellipse(extent={{42.3,-32.7},{49.7,-25.3}}, lineColor={191,0,0}, fillColor={191,0,0}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.55),
+        Line(points={{67,49},{74,49},{74,-41},{67,-41}}, color={128,128,128}, thickness=0.65, pattern=LinePattern.Solid),
+        Text(extent={{-65,-50},{65,-75}}, textString="Li <= ui <= Ui", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
-    Documentation(info="<html><p><b>Purpose</b> Evaluate independent finite numeric channel bounds.</p><p><b>Interfaces</b> Modelica.Blocks.Interfaces.BooleanInput valid if useValidInput; Modelica.Blocks.Interfaces.BooleanInput window if windowMode==EvaluationLibrary.Utilities.Types.WindowMode.ExternalSingle; output EvaluationLibrary.Utilities.Types.DataStatus dataStatus; output EvaluationLibrary.Utilities.Types.Verdict verdict; output Boolean complete; output Boolean everViolated(start=false,fixed=true); output Modelica.Units.SI.Time firstViolationTime(start=0,fixed=true); EvaluationLibrary.Utilities.Interfaces.MetricOutput result; Modelica.Blocks.Interfaces.RealInput u[n]; Modelica.Blocks.Interfaces.BooleanInput channelValid[n] if useChannelValid; Modelica.Blocks.Interfaces.IntegerOutput perChannelVerdict[n]; output Boolean channelViolated[n](each start=false,each fixed=true); output Modelica.Units.SI.Time channelFirstViolation[n](each start=0,each fixed=true); Modelica.Blocks.Interfaces.RealOutput value; Modelica.Blocks.Interfaces.BooleanOutput available</p><p><b>Parameters</b> parameter EvaluationLibrary.Utilities.Types.WindowMode windowMode=EvaluationLibrary.Utilities.Types.WindowMode.FixedTime; parameter Modelica.Units.SI.Time windowStart=0; parameter Modelica.Units.SI.Time windowStop=5; parameter Boolean applicable=true; parameter Boolean useValidInput=false; parameter Modelica.Units.SI.Time samplePeriod(min=0)=0.01; parameter Modelica.Units.SI.Time sampleStart=0; parameter Integer n(min=1)=3; parameter Real lower[n]=fill(0,n); parameter Real upper[n]=fill(1,n); parameter Real tolerance[n]=fill(0,n); parameter String channelUnit[n]=fill(\"1\",n); parameter Boolean useChannelValid=false</p><p><b>Behavior</b> Evaluate independent finite numeric channel bounds</p><p><b>Initialization</b> The declared start values and initialization equations apply.</p><p><b>Activation and recovery</b> Not applicable.</p><p><b>Limitations</b> A channel is evaluated in its declared unit. This block does not convert units.</p><p><b>Observables</b> complete, everViolated, result, perChannelVerdict, channelViolated, value, available</p><p><b>Evidence kind</b> Interpret the result with the declared window and sampling rule. Incomplete or invalid evidence must not be interpreted as satisfied.</p><p><b>Example</b> <a href=\"modelica://EvaluationLibrary.Examples.BoundsAndValidWitness\">EvaluationLibrary.Examples.BoundsAndValidWitness</a></p></html>"));
+    Documentation(info="<html><p>Apply independent inclusive lower/upper bounds and tolerances to n simultaneous channels. Defaults are n=3, bounds zero and one and zero tolerance. channelUnit labels each channel; optional channelValid combines with common validity. Per-channel results and violation witnesses remain separate; no cross-unit numerical total is formed.</p><p>The default fixed observation is [0,5) s. ExternalSingle instead observes only the first contiguous external gate; a later gate invalidates the history. useValidInput defaults to false; when enabled, false validity or nonfinite in-window data latch INVALID. Early normal termination or missing coverage is INCOMPLETE. DataStatus qualifies evidence independently of Verdict. Numeric availability and violation witnesses must be inspected separately. Stable identity, unitName and optional requirement metadata originate here and travel directly with result to a writer.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
 end VectorBounds;
