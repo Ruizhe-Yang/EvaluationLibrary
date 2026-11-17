@@ -1,5 +1,5 @@
 within EvaluationLibrary.Utilities;
-package Internal "Internal"
+package Internal "Internal accumulation, observation and output helpers"
   extends Modelica.Icons.Package;
   annotation(Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={
@@ -9,5 +9,5 @@ package Internal "Internal"
         Text(extent={{-50.6,46.92},{-12.88,14.72}}, textString="Σ", textColor={0,0,127}, fontSize=0),
         Text(extent={{14.72,-11.04},{50.6,-45.08}}, textString="z", textColor={0,0,127}, fontSize=0)
       }));
-  annotation(Documentation(info="<html><p>package supports the single complete-result and explicit qualification contract. See the parameter and field descriptions for its numerical or logical meaning.</p></html>"));
+  annotation(Documentation(info="<html><p>Implementation helpers used by the library blocks, including observation windows, sample accumulation, event matching, spectral calculations and report writing. Prefer the public evaluation and reporting blocks when assembling an application model.</p></html>"));
 end Internal;

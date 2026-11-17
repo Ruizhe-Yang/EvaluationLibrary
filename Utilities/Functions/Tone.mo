@@ -1,22 +1,22 @@
 within EvaluationLibrary.Utilities.Functions;
-function Tone "Project finite uniformly spaced samples onto a complex sinusoid"
+function Tone "Project uniformly spaced samples onto a sinusoid"
   extends Modelica.Icons.Function;
-input Real x[:] "X";
-  input Modelica.Units.SI.Time period "Period";
-  input Modelica.Units.SI.Frequency f "F";
+input Real x[:] "Finite uniformly spaced sample values";
+  input Modelica.Units.SI.Time period "Positive sample spacing";
+  input Modelica.Units.SI.Frequency f "Projection frequency from DC to Nyquist";
   input EvaluationLibrary.Utilities.Types.Taper taper=EvaluationLibrary.Utilities.Types.Taper.Rectangular "Finite spectral taper; rectangular or Hann";
   input Boolean removeMean=false "Subtract the sample mean before spectral projection";
-  output Real re "Re";
-  output Real im "Im";
-  output Real amplitude "Amplitude";
-  output Real phase(unit="rad") "Phase";
+  output Real re "Normalised real part of the projection";
+  output Real im "Normalised imaginary part of the projection";
+  output Real amplitude "One-sided peak amplitude";
+  output Real phase(unit="rad") "Phase relative to a cosine at the first sample";
 protected
-  Integer n=size(x,1) "Number of channels, records or configured items; at least one";
-  Real dc "Dc";
-  Real w "W";
-  Real wTotal "W total";
-  Real angle "Angle";
-  Real scale "Scale";
+  Integer n=size(x,1) "Number of uniformly spaced samples";
+  Real dc "Arithmetic mean removed from the samples";
+  Real w "Weight of the current sample";
+  Real wTotal "Sum of sample weights";
+  Real angle "Projection angle for the current sample";
+  Real scale "One-sided amplitude normalisation factor";
 algorithm
   assert(n>=16 and n<=1024 and period>0 and f>=0 and f<=1/(2*period),"Invalid finite spectral projection.");
   dc:=if removeMean then sum(x)/n else 0;
@@ -44,5 +44,5 @@ algorithm
         Line(points={{36.593,-9.149},{50.209,4.467}}, color={0,0,127}, thickness=1.2, pattern=LinePattern.Solid, arrow={Arrow.None,Arrow.Filled}),
         Text(extent={{-29.785,-47.444},{29.785,-72.974}}, textString="f0", textColor={108,88,49}, fontSize=0)
       }),
-    Documentation(info="<html><p>Tone. Inputs retain the physical units or logical meaning stated by their declarations. Domain assertions and explicit availability flags are part of the contract.</p></html>"));
+    Documentation(info="<html><p>Calculate the complex projection, peak amplitude and phase of <code>x</code> at frequency <code>f</code>. The input contains 16 to 1024 uniformly spaced samples; <code>period</code> is positive and <code>f</code> lies between zero and the Nyquist frequency.</p><p>An optional arithmetic-mean subtraction precedes rectangular or symmetric Hann weighting. The projection is normalised by the sum of weights, with a factor of two except at DC and Nyquist. Phase uses a cosine reference at the first sample. The caller is responsible for finite, valid sample values.</p></html>"));
 end Tone;

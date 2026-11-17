@@ -1,14 +1,14 @@
 within EvaluationLibrary.Utilities.Internal;
-block ToneSpectrum "Shared finite-window coherent tone calculation"
+block ToneSpectrum "Calculate a finite one-sided amplitude and phase spectrum"
   parameter Integer nSamples(min=4,max=1024) = 128 "Uniform sample count";
   parameter Integer nBins(min=1,max=div(nSamples,2)) = min(32,div(nSamples,2)) "Highest retained nonnegative bin";
   parameter Modelica.Units.SI.Time startTime = 0 "First sample, s";
   parameter Modelica.Units.SI.Time samplePeriod(min=Modelica.Constants.small) = 0.01 "Tick period, s";
-  parameter EvaluationLibrary.Utilities.Types.SpectralWindow window = EvaluationLibrary.Utilities.Types.SpectralWindow.Rectangular "Weighting";
+  parameter EvaluationLibrary.Utilities.Types.SpectralWindow window = EvaluationLibrary.Utilities.Types.SpectralWindow.Rectangular "Spectral weighting applied to the sample record";
   parameter Real amplitudeFloor(min=0) = 1e-9 "Smallest reportable amplitude, input unit";
   parameter Boolean applicable = true "Whether this record applies";
   final parameter Modelica.Units.SI.Frequency resolution = 1/(nSamples*samplePeriod) "Bin width, Hz";
-  Modelica.Blocks.Interfaces.RealInput u "Trajectory" annotation(Placement(transformation(extent={{-106,18},{-94,30}}), iconTransformation(extent={{-106,18},{-94,30}})));
+  Modelica.Blocks.Interfaces.RealInput u "Observed real signal" annotation(Placement(transformation(extent={{-106,18},{-94,30}}), iconTransformation(extent={{-106,18},{-94,30}})));
   Modelica.Blocks.Interfaces.BooleanInput valid "Clocked data validity" annotation(Placement(transformation(extent={{-106,-30},{-94,-18}}), iconTransformation(extent={{-106,-30},{-94,-18}})));
   output Real amplitude[nBins+1] "One-sided peak amplitude, including DC";
   output Modelica.Units.SI.Angle phase[nBins+1] "Phase of cosine reference at startTime";
@@ -22,9 +22,9 @@ block ToneSpectrum "Shared finite-window coherent tone calculation"
   output Modelica.Units.SI.Time validDuration "Valid capture duration";
 protected
   EvaluationLibrary.Response.SampleHistory history(n=nSamples,startTime=startTime,
-    samplePeriod=samplePeriod,applicable=applicable) "History";
+    samplePeriod=samplePeriod,applicable=applicable) "Uniformly sampled observation history";
   Real bins[nBins+1,2] "Discrete spectrum of the completed history";
-  Real strongest "Strongest";
+  Real strongest "Largest non-DC amplitude found so far";
 initial equation
   assert(nSamples>=4 and nSamples<=1024 and nBins>=1 and nBins<=div(nSamples,2) and samplePeriod>0 and amplitudeFloor>=0,
     "Invalid DFT grid.");
@@ -66,5 +66,5 @@ algorithm
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),
-    Documentation(info="<html><p>Shared finite-window coherent tone calculation. Inputs retain the physical units or logical meaning stated by their declarations. Domain assertions and explicit availability flags are part of the contract.</p></html>"));
+    Documentation(info="<html><p>Collect <code>nSamples</code> on the grid defined by <code>startTime</code> and <code>samplePeriod</code>, using <code>Response.SampleHistory</code>. Once the history is complete, calculate bins from DC to <code>nBins</code> with <code>oneSidedDFT</code>.</p><p>Amplitudes are peak values and phases refer to a cosine at <code>startTime</code>. The dominant bin excludes DC and must exceed <code>amplitudeFloor</code>; otherwise it is zero. Inspect <code>dataState</code> before interpreting the arrays, which contain zero placeholders before complete evidence is available.</p></html>"));
 end ToneSpectrum;

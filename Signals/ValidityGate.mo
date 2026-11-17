@@ -1,13 +1,13 @@
 within EvaluationLibrary.Signals;
-block ValidityGate "Preserve the value while qualifying data and age"
+block ValidityGate "Signal pass-through with range and age qualification"
 parameter Real lower=-Modelica.Constants.inf "Inclusive lower acceptance bound";
   parameter Real upper=Modelica.Constants.inf "Inclusive upper acceptance bound";
   parameter Modelica.Units.SI.Time maxAge(min=0)=1 "Maximum age of evidence in seconds";
-    Modelica.Blocks.Interfaces.RealInput u "Observed real signal in the declared engineering unit" annotation(Placement(transformation(origin={-100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,70},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.RealInput age(unit="s") "Age" annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanInput validIn "Valid in" annotation(Placement(transformation(origin={70,100},extent={{-10,-10},{10,10}}),iconTransformation(origin={70,100},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.RealOutput y "Y" annotation(Placement(transformation(origin={100,0},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,0},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanOutput valid "Valid" annotation(Placement(transformation(origin={-70,100},extent={{-10,-10},{10,10}}),iconTransformation(origin={-70,100},extent={{-10,-10},{10,10}})));
+    Modelica.Blocks.Interfaces.RealInput u "Observed signal" annotation(Placement(transformation(origin={-100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.RealInput age(unit="s") "Age of the input value" annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanInput validIn "External input-validity condition" annotation(Placement(transformation(origin={70,100},extent={{-10,-10},{10,10}}),iconTransformation(origin={70,100},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.RealOutput y "Unmodified input value" annotation(Placement(transformation(origin={100,0},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,0},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanOutput valid "Combined validity condition" annotation(Placement(transformation(origin={-70,100},extent={{-10,-10},{10,10}}),iconTransformation(origin={-70,100},extent={{-10,-10},{10,10}})));
 initial equation
   assert(lower<=upper and maxAge>=0,"Invalid data validity bounds.");
 equation
@@ -32,5 +32,5 @@ equation
         Text(extent={{-65,-50},{65,-75}}, textString="value + valid", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
-    Documentation(info="<html><p>Preserve y=u while combining validIn, finite u, inclusive lower/upper limits and age between zero and maxAge into the separate valid output. The limits default to unbounded and maxAge defaults to 1 s. valid is a current qualification decision; it is neither a stored violation witness nor a completed requirement verdict.</p></html>"));
+    Documentation(info="<html><p>Passes <code>u</code> to <code>y</code> unchanged. The separate <code>valid</code> output requires <code>validIn=true</code>, a finite value within the inclusive bounds <code>lower</code> and <code>upper</code>, and an age between zero and <code>maxAge</code>. An invalid value is not replaced or latched.</p></html>"));
 end ValidityGate;

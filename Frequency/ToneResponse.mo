@@ -1,34 +1,34 @@
 within EvaluationLibrary.Frequency;
-block ToneResponse "Coherent finite-window input-output gain and phase difference"
-  parameter String metricId=getInstanceName() "Stable identity of this retained specialist";
-  parameter String requirementId="" "Requirement identity, when configured";
-  parameter String requirementVersion="" "Interpreted requirement version";
-  parameter String unitName="1" "Engineering unit of the reported specialist value";
-  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete specialist result" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
-  Boolean terminalSeen(start=false,fixed=true) "Terminal seen";
-  discrete Boolean qualifiedViolation(start=false,fixed=true) "Qualified violation";
-  discrete Real qualifiedViolationTime(start=0,fixed=true) "Qualified violation time";
-  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Result status";
+block ToneResponse "Finite-record input-output gain and phase difference"
+  parameter String metricId=getInstanceName() "Metric identifier";
+  parameter String requirementId="" "Optional requirement identifier";
+  parameter String requirementVersion="" "Requirement version";
+  parameter String unitName="1" "Engineering unit of the reported value";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Result record with value, status and observation metadata" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
+  Boolean terminalSeen(start=false,fixed=true) "True after normal simulation termination";
+  discrete Boolean qualifiedViolation(start=false,fixed=true) "Retained valid violation flag";
+  discrete Real qualifiedViolationTime(start=0,fixed=true) "First valid violation time";
+  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Status used in the result record";
   parameter Integer nSamples(min=4,max=1024) = 200 "Number of uniformly spaced observations in the finite record";
   parameter Modelica.Units.SI.Time startTime = 0 "First observation or stimulus time in seconds";
-  parameter Modelica.Units.SI.Time samplePeriod(min=Modelica.Constants.small) = 0.005 "Positive uniform sampling interval in seconds";
+  parameter Modelica.Units.SI.Time samplePeriod(min=Modelica.Constants.small) = 0.005 "Uniform sampling interval; must be positive";
   parameter Integer bin(min=1,max=div(nSamples-1,2)) = min(8,div(nSamples-1,2)) "Positive coherent Fourier bin below the Nyquist bin";
   parameter EvaluationLibrary.Utilities.Types.SpectralWindow window = EvaluationLibrary.Utilities.Types.SpectralWindow.Rectangular "Finite spectral window selection";
   parameter Real minInputAmplitude(min=Modelica.Constants.small) = 1e-6 "Amplitude floor, input units";
   parameter Real minOutputAmplitude(min=Modelica.Constants.small) = 1e-6 "Phase amplitude floor, output units";
-  Modelica.Blocks.Interfaces.RealInput excitation "Excitation" annotation(Placement(transformation(extent={{-106,42},{-94,54}}), iconTransformation(extent={{-106,42},{-94,54}})));
-  Modelica.Blocks.Interfaces.RealInput response "Response" annotation(Placement(transformation(extent={{-106,-6},{-94,6}}), iconTransformation(extent={{-106,-6},{-94,6}})));
+  Modelica.Blocks.Interfaces.RealInput excitation "Input excitation signal" annotation(Placement(transformation(extent={{-106,42},{-94,54}}), iconTransformation(extent={{-106,42},{-94,54}})));
+  Modelica.Blocks.Interfaces.RealInput response "Observed response signal" annotation(Placement(transformation(extent={{-106,-6},{-94,6}}), iconTransformation(extent={{-106,-6},{-94,6}})));
   Modelica.Blocks.Interfaces.BooleanInput valid "Common validity flag" annotation(Placement(transformation(extent={{-106,-54},{-94,-42}}), iconTransformation(extent={{-106,-54},{-94,-42}})));
   Modelica.Blocks.Interfaces.RealOutput gain "Output amplitude / input amplitude" annotation(Placement(transformation(extent={{94,76},{106,88}}), iconTransformation(extent={{94,76},{106,88}})));
   Modelica.Blocks.Interfaces.RealOutput phaseDifference(unit="rad") "Output minus input phase in [-pi,pi]" annotation(Placement(transformation(extent={{94,35},{106,47}}), iconTransformation(extent={{94,35},{106,47}})));
-  Modelica.Blocks.Interfaces.BooleanOutput gainDefined "Gain defined" annotation(Placement(transformation(extent={{94,-6},{106,6}}), iconTransformation(extent={{94,-6},{106,6}})));
-  Modelica.Blocks.Interfaces.BooleanOutput phaseDefined "Phase defined" annotation(Placement(transformation(extent={{94,-47},{106,-35}}), iconTransformation(extent={{94,-47},{106,-35}})));
+  Modelica.Blocks.Interfaces.BooleanOutput gainDefined "True when the input amplitude supports a gain estimate" annotation(Placement(transformation(extent={{94,-6},{106,6}}), iconTransformation(extent={{94,-6},{106,6}})));
+  Modelica.Blocks.Interfaces.BooleanOutput phaseDefined "True when both amplitudes support a phase estimate" annotation(Placement(transformation(extent={{94,-47},{106,-35}}), iconTransformation(extent={{94,-47},{106,-35}})));
   Modelica.Blocks.Interfaces.RealOutput frequency(unit="Hz") "Selected frequency in hertz, not above Nyquist" annotation(Placement(transformation(extent={{94,-88},{106,-76}}), iconTransformation(extent={{94,-88},{106,-76}})));
-  output EvaluationLibrary.Utilities.Types.DataStatus dataState "Evidence qualification independent of requirement verdict";
+  output EvaluationLibrary.Utilities.Types.DataStatus dataState "Status of the observation data";
 protected
-  EvaluationLibrary.Utilities.Internal.ToneSpectrum x(nSamples=nSamples,nBins=bin,startTime=startTime,samplePeriod=samplePeriod,window=window,amplitudeFloor=minInputAmplitude) "X";
-  EvaluationLibrary.Utilities.Internal.ToneSpectrum y(nSamples=nSamples,nBins=bin,startTime=startTime,samplePeriod=samplePeriod,window=window,amplitudeFloor=minOutputAmplitude) "Y";
-  Real delta(unit="rad") "Delta";
+  EvaluationLibrary.Utilities.Internal.ToneSpectrum x(nSamples=nSamples,nBins=bin,startTime=startTime,samplePeriod=samplePeriod,window=window,amplitudeFloor=minInputAmplitude) "Excitation spectrum";
+  EvaluationLibrary.Utilities.Internal.ToneSpectrum y(nSamples=nSamples,nBins=bin,startTime=startTime,samplePeriod=samplePeriod,window=window,amplitudeFloor=minOutputAmplitude) "Response spectrum";
+  Real delta(unit="rad") "Unwrapped response-minus-excitation phase";
 initial equation
   assert(bin>=1 and 2*bin<nSamples and minInputAmplitude>0 and minOutputAmplitude>0, "A non-Nyquist positive bin and positive floors are required.");
 equation
@@ -80,5 +80,5 @@ equation
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),
-    Documentation(info="<html><p>Capture excitation and response on the same ordered finite grid and coherent Fourier bin. Defaults are nSamples=200, startTime=0 s and samplePeriod=0.02 s. bin is positive and below Nyquist; the bin frequency is fixed by record duration. Gain requires minInputAmplitude (default 1e-6 in input units); phase also requires minOutputAmplitude (default 1e-6 in output units). Return dimensionless gain and radian phase difference with independent availability; invalid samples cannot form complete frequency evidence.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
+    Documentation(info="<html><p>Samples <code>excitation</code> and <code>response</code> on a common grid beginning at <code>startTime</code>. The selected coherent frequency is <code>bin/(nSamples*samplePeriod)</code>, with a positive bin below Nyquist. The default period is 0.005 s for 200 samples.</p><p>Connect the shared <code>valid</code> input. Gain requires an input amplitude greater than <code>minInputAmplitude</code>; phase also requires an output amplitude greater than <code>minOutputAmplitude</code>. The phase difference is wrapped to plus or minus pi. Gain has output units divided by input units; set <code>unitName</code> accordingly. <code>result.value</code> reports gain.</p></html>"));
 end ToneResponse;

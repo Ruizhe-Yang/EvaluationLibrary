@@ -1,5 +1,5 @@
 within EvaluationLibrary.Utilities.Types;
-type ReportFormat = enumeration(CSV "Report format", Text "Report format") "Report format"
+type ReportFormat = enumeration(CSV "Comma-separated values", Text "Readable plain text") "Format of a result report"
   annotation(Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={
         Rectangle(extent={{-85,-85},{85,85}}, lineColor={128,128,128}, fillColor={160,160,164}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=18),
@@ -12,4 +12,4 @@ type ReportFormat = enumeration(CSV "Report format", Text "Report format") "Repo
         Line(points={{4,-40},{28,-40}}, color={255,255,255}, thickness=0.8, pattern=LinePattern.Solid),
         Text(extent={{-70,-61},{70,-80}}, textString="CSV/TXT", textColor={255,255,255}, fontSize=0)
       }),
-    Documentation(info="<html><p>Report format. Inputs retain the physical units or logical meaning stated by their declarations. Domain assertions and explicit availability flags are part of the contract.</p></html>"));
+    Documentation(info="<html><p>Select comma-separated values (<code>CSV</code>) or readable plain text (<code>Text</code>) where a reporting component exposes this choice.</p></html>"));

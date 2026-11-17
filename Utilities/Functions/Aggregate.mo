@@ -1,14 +1,14 @@
 within EvaluationLibrary.Utilities.Functions;
-function Aggregate "Combine required verdict codes using an explicit priority"
+function Aggregate "Combine required verdicts with an explicit priority"
   extends Modelica.Icons.Function;
-input Integer codes[:] "Codes";
+input Integer codes[:] "Verdict codes to combine";
   input Boolean required[size(codes,1)] "Which child requirements enter the overall conjunction";
   output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement decision independent of observation completeness";
 protected
-  Integer applicableCount "Applicable count";
-  Boolean invalid "Invalid";
-  Boolean violated "Violated";
-  Boolean undecided "Undecided";
+  Integer applicableCount "Number of required applicable verdicts";
+  Boolean invalid "At least one required code is invalid";
+  Boolean violated "At least one required requirement is violated";
+  Boolean undecided "At least one required verdict is undecided";
 algorithm
   applicableCount:=0; invalid:=false; violated:=false; undecided:=false;
   for i in 1:size(codes,1) loop
@@ -39,5 +39,5 @@ algorithm
         Line(points={{-64.676,26.593},{-64.676,-46.593}}, color={64,64,64}, thickness=0.7, pattern=LinePattern.Solid, arrow={Arrow.None,Arrow.Filled}),
         Text(extent={{-51.911,-60.209},{51.911,-78.08}}, textString="priority", textColor={64,64,64}, fontSize=0)
       }),
-    Documentation(info="<html><p>Aggregate. Inputs retain the physical units or logical meaning stated by their declarations. Domain assertions and explicit availability flags are part of the contract.</p></html>"));
+    Documentation(info="<html><p>Combine the entries of <code>codes</code> for which <code>required</code> is true. Ignore <code>NOT_APPLICABLE</code> entries. The priority is <code>INVALID</code>, <code>VIOLATED</code>, <code>UNDECIDED</code>, then <code>SATISFIED</code>; no applicable entries gives <code>NOT_APPLICABLE</code>.</p><p>Codes use the ordinals of <code>Types.Verdict</code>. Unrecognised codes are invalid. Apply <code>QualifiedCode</code> first when data status must also be considered.</p></html>"));
 end Aggregate;

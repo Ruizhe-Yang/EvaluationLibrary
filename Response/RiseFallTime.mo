@@ -1,37 +1,37 @@
 within EvaluationLibrary.Response;
-block RiseFallTime "Qualified crossing interval in an explicit direction"
-  parameter String metricId=getInstanceName() "Stable identity of this retained specialist";
-  parameter String requirementId="" "Requirement identity, when configured";
-  parameter String requirementVersion="" "Interpreted requirement version";
-  parameter String unitName="s" "Engineering unit of the reported specialist value";
-  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete specialist result" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
-  Boolean terminalSeen(start=false,fixed=true) "Terminal seen";
-  discrete Boolean qualifiedViolation(start=false,fixed=true) "Qualified violation";
-  discrete Real qualifiedViolationTime(start=0,fixed=true) "Qualified violation time";
-  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Result status";
-  parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive window start, s";
-  parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive window end, s";
-  parameter Boolean applicable = true "Whether the analysis applies";
+block RiseFallTime "Measure the elapsed time between two directed level crossings"
+  parameter String metricId=getInstanceName() "Identifier carried by the result";
+  parameter String requirementId="" "Optional requirement identifier";
+  parameter String requirementVersion="" "Optional requirement version";
+  parameter String unitName="s" "Unit label for the reported value";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Value, qualification and requirement outcome" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
+  Boolean terminalSeen(start=false,fixed=true) "True after normal simulation termination";
+  discrete Boolean qualifiedViolation(start=false,fixed=true) "Latched valid requirement violation";
+  discrete Real qualifiedViolationTime(start=0,fixed=true) "Time of the first valid requirement violation";
+  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Qualification of the reported result";
+  parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive start of the observation window";
+  parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive end of the observation window";
+  parameter Boolean applicable = true "True if this assessment is applicable";
 
-  Modelica.Blocks.Interfaces.BooleanInput valid "Host-provided input validity" annotation(Placement(transformation(extent={{-106,18},{-94,30}}), iconTransformation(extent={{-106,18},{-94,30}})));
+  Modelica.Blocks.Interfaces.BooleanInput valid "Validity of the observed inputs" annotation(Placement(transformation(extent={{-106,18},{-94,30}}), iconTransformation(extent={{-106,18},{-94,30}})));
 
-  Modelica.Blocks.Interfaces.BooleanOutput inWindow "Current point lies in applicable window" annotation(Placement(transformation(extent={{94,76},{106,88}}), iconTransformation(extent={{94,76},{106,88}})));
-  output EvaluationLibrary.Utilities.Types.DataStatus dataState "Collection and data validity state";
-  Modelica.Blocks.Interfaces.RealOutput observedDuration(unit="s") "Accumulated valid duration" annotation(Placement(transformation(extent={{94,49},{106,61}}), iconTransformation(extent={{94,49},{106,61}})));
+  Modelica.Blocks.Interfaces.BooleanOutput inWindow "True inside the applicable observation window" annotation(Placement(transformation(extent={{94,76},{106,88}}), iconTransformation(extent={{94,76},{106,88}})));
+  output EvaluationLibrary.Utilities.Types.DataStatus dataState "Observation coverage and data validity";
+  Modelica.Blocks.Interfaces.RealOutput observedDuration(unit="s") "Accumulated valid observation duration" annotation(Placement(transformation(extent={{94,49},{106,61}}), iconTransformation(extent={{94,49},{106,61}})));
   parameter Real firstLevel = 0.1 "First crossing level in the signal unit";
   parameter Real secondLevel = 0.9 "Second crossing level in the signal unit";
   parameter Boolean falling = false "Measure the falling rather than rising transition";
   Modelica.Blocks.Interfaces.RealInput u "Observed real signal in the declared engineering unit" annotation(Placement(transformation(extent={{-106,-30},{-94,-18}}), iconTransformation(extent={{-106,-30},{-94,-18}})));
   Modelica.Blocks.Interfaces.BooleanOutput started(start=false,fixed=true) "Started" annotation(Placement(transformation(extent={{94,21},{106,33}}), iconTransformation(extent={{94,21},{106,33}})));
   Modelica.Blocks.Interfaces.BooleanOutput finished(start=false,fixed=true) "Finished" annotation(Placement(transformation(extent={{94,-6},{106,6}}), iconTransformation(extent={{94,-6},{106,6}})));
-  Modelica.Blocks.Interfaces.RealOutput firstTime(unit="s",start=0,fixed=true) "First time" annotation(Placement(transformation(extent={{94,-33},{106,-21}}), iconTransformation(extent={{94,-33},{106,-21}})));
-  Modelica.Blocks.Interfaces.RealOutput secondTime(unit="s",start=0,fixed=true) "Second time" annotation(Placement(transformation(extent={{94,-61},{106,-49}}), iconTransformation(extent={{94,-61},{106,-49}})));
+  Modelica.Blocks.Interfaces.RealOutput firstTime(unit="s",start=0,fixed=true) "Time of the first directed level crossing" annotation(Placement(transformation(extent={{94,-33},{106,-21}}), iconTransformation(extent={{94,-33},{106,-21}})));
+  Modelica.Blocks.Interfaces.RealOutput secondTime(unit="s",start=0,fixed=true) "Time of the second directed level crossing" annotation(Placement(transformation(extent={{94,-61},{106,-49}}), iconTransformation(extent={{94,-61},{106,-49}})));
   Modelica.Blocks.Interfaces.RealOutput duration(unit="s") "Duration" annotation(Placement(transformation(extent={{94,-88},{106,-76}}), iconTransformation(extent={{94,-88},{106,-76}})));
 protected
-  EvaluationLibrary.Utilities.Internal.ContinuousEvidence evidence(windowStart=windowStart,windowEnd=windowEnd,applicable=applicable) "Evidence";
-  Boolean dataOK "Validity combined with the metric data domain";
-  Boolean firstHit "First hit";
-  Boolean secondHit "Second hit";
+  EvaluationLibrary.Utilities.Internal.ContinuousEvidence evidence(windowStart=windowStart,windowEnd=windowEnd,applicable=applicable) "Observation coverage and data qualification";
+  Boolean dataOK "True if input validity and numerical checks pass";
+  Boolean firstHit "Valid observation beyond the first directed level";
+  Boolean secondHit "Valid observation beyond the second directed level";
 initial equation
   assert(if falling then firstLevel > secondLevel else firstLevel < secondLevel, "Levels must match the measurement direction.");
 equation
@@ -90,5 +90,5 @@ equation
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}}, preserveAspectRatio=true), graphics={Text(extent={{-96,99},{96,88}}, textColor={73,53,132}, textString="RiseFallTime")}),
-    Documentation(info="<html><p>Measure the time between firstLevel and secondLevel crossings in the selected falling or rising direction. Defaults are rising, 0.1 and 0.9 in the input unit. The levels must be ordered for the chosen direction. The complete result reports elapsed seconds only after both qualified crossings exist.</p><p>The fixed observation defaults to [0,5) s. valid is host-provided and false validity or a failed numeric-domain check inside the window latches INVALID. Positive valid duration is needed for duration-normalized values. A normal stop before full observation gives an INCOMPLETE complete result; DataStatus and Verdict remain separate.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
+    Documentation(info="<html><p>Records the first valid crossing of <code>firstLevel</code>, followed by the first valid crossing of <code>secondLevel</code>. Set <code>falling=true</code> for decreasing transitions and order the levels accordingly.</p><p>Connect <code>u</code> and <code>valid</code>, and set <code>[windowStart, windowEnd)</code>. <code>duration</code> is available after <code>finished</code> becomes true. Levels are inclusive; a signal already beyond both levels at the window start may give zero duration.</p></html>"));
 end RiseFallTime;

@@ -1,46 +1,46 @@
 within EvaluationLibrary.Response;
-block RecoveryTime "Confirm a qualified recovery dwell after the first danger event"
-  parameter String metricId=getInstanceName() "Stable metric identity";
-  parameter String requirementId="" "Requirement identity; empty for a statistic";
-  parameter String requirementVersion="" "Interpreted requirement version";
-  parameter String unitName="s" "Engineering unit of the reported value";
-parameter EvaluationLibrary.Utilities.Types.WindowMode windowMode=EvaluationLibrary.Utilities.Types.WindowMode.FixedTime "Fixed-time or first externally gated observation window";
-  parameter Modelica.Units.SI.Time windowStart=0 "Inclusive observation start in seconds";
-  parameter Modelica.Units.SI.Time windowStop=5 "Exclusive observation stop in seconds";
-  parameter Boolean applicable=true "Whether this evaluation applies";
-  parameter Boolean useValidInput=false "Expose the host-provided validity connector";
+block RecoveryTime "Measure recovery delay after a sustained valid return"
+  parameter String metricId=getInstanceName() "Identifier carried by the result";
+  parameter String requirementId="" "Optional requirement identifier";
+  parameter String requirementVersion="" "Optional requirement version";
+  parameter String unitName="s" "Unit label for the reported value";
+parameter EvaluationLibrary.Utilities.Types.WindowMode windowMode=EvaluationLibrary.Utilities.Types.WindowMode.FixedTime "Fixed interval or first contiguous external window";
+  parameter Modelica.Units.SI.Time windowStart=0 "Inclusive start of the observation window";
+  parameter Modelica.Units.SI.Time windowStop=5 "Exclusive end of the observation window";
+  parameter Boolean applicable=true "True if this assessment is applicable";
+  parameter Boolean useValidInput=false "Enable the optional input validity connector";
 
-  parameter Modelica.Units.SI.Time samplePeriod(min=0)=0.01 "Positive uniform sampling interval in seconds";
-  parameter Modelica.Units.SI.Time sampleStart=0 "Uniform sample grid origin in seconds";
-  Modelica.Blocks.Interfaces.BooleanInput valid if useValidInput "Host declares the observed inputs valid" annotation(Placement(transformation(origin={0,100},extent={{-10,-10},{10,10}}),iconTransformation(origin={0,100},extent={{-10,-10},{10,10}})));
+  parameter Modelica.Units.SI.Time samplePeriod(min=0)=0.01 "Uniform sampling interval for sampled evaluation";
+  parameter Modelica.Units.SI.Time sampleStart=0 "Time origin of the uniform sample grid";
+  Modelica.Blocks.Interfaces.BooleanInput valid if useValidInput "True if the observed inputs are valid" annotation(Placement(transformation(origin={0,100},extent={{-10,-10},{10,10}}),iconTransformation(origin={0,100},extent={{-10,-10},{10,10}})));
   Modelica.Blocks.Interfaces.BooleanInput window if windowMode==EvaluationLibrary.Utilities.Types.WindowMode.ExternalSingle "External observation gate; only the first contiguous interval is accepted" annotation(Placement(transformation(origin={-100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,70},extent={{-10,-10},{10,10}})));
-  output EvaluationLibrary.Utilities.Types.DataStatus dataStatus "Evidence qualification independent of requirement verdict";
-  output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement decision independent of observation completeness";
-  output Boolean complete "Collection has closed; inspect DataStatus before assuming full evidence";
-  output Boolean everViolated "A qualified violation witness exists";
-  output Modelica.Units.SI.Time firstViolationTime "First qualified violation instant; meaningful only when everViolated";
-  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete directly reportable evidence result" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
+  output EvaluationLibrary.Utilities.Types.DataStatus dataStatus "Observation coverage and data validity";
+  output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement outcome, separate from data qualification";
+  output Boolean complete "Observation has ended; completeness is reported by dataStatus";
+  output Boolean everViolated "True after a valid violation has been observed";
+  output Modelica.Units.SI.Time firstViolationTime "Time of the first valid violation";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Value, qualification and requirement outcome" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
 
   parameter Modelica.Units.SI.Time recoveryDwell(min=0)=0.2 "Required uninterrupted valid recovery duration in seconds";
-    Modelica.Blocks.Interfaces.BooleanInput danger "Danger" annotation(Placement(transformation(origin={-100,35},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,35},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanInput inRecoveryBand "In recovery band" annotation(Placement(transformation(origin={-100,0},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,0},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanOutput recovered(start=false,fixed=true) "Recovered" annotation(Placement(transformation(origin={100,23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,23.33333},extent={{-10,-10},{10,10}})));
-  discrete Modelica.Units.SI.Time dangerTime(start=0,fixed=true) "Danger time";
-  discrete Modelica.Units.SI.Time recoveredAt(start=0,fixed=true) "Recovered at";
-  Modelica.Blocks.Interfaces.RealOutput value "Numerical metric; meaningful only when available" annotation(Placement(transformation(origin={100,-23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-23.33333},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanOutput available "The numerical output exists in the current data domain" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
+    Modelica.Blocks.Interfaces.BooleanInput danger "Observed danger condition" annotation(Placement(transformation(origin={-100,35},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,35},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanInput inRecoveryBand "True when the observed state is in the recovery band" annotation(Placement(transformation(origin={-100,0},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,0},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanOutput recovered(start=false,fixed=true) "True after the required recovery dwell has completed" annotation(Placement(transformation(origin={100,23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,23.33333},extent={{-10,-10},{10,10}})));
+  discrete Modelica.Units.SI.Time dangerTime(start=0,fixed=true) "Time of the first valid danger observation";
+  discrete Modelica.Units.SI.Time recoveredAt(start=0,fixed=true) "Time at which recovery is confirmed";
+  Modelica.Blocks.Interfaces.RealOutput value "Numerical result; meaningful only when available" annotation(Placement(transformation(origin={100,-23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-23.33333},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanOutput available "True if the numerical result is available" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
 protected
-  Modelica.Blocks.Interfaces.BooleanInput trusted "Trusted" annotation(Placement(transformation(origin={-100,-35},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-35},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanInput trusted "Effective input validity" annotation(Placement(transformation(origin={-100,-35},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-35},extent={{-10,-10},{10,10}})));
   Modelica.Blocks.Interfaces.BooleanInput externalWindow "External window" annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
   EvaluationLibrary.Utilities.Internal.WindowEvidence gate(windowMode=windowMode,windowStart=windowStart,windowStop=windowStop,
-    sampled=false,samplePeriod=samplePeriod,sampleStart=sampleStart,applicable=applicable) "Gate";
-  Boolean dataOK "Data ok";
-  Boolean violationNow "Violation now";
+    sampled=false,samplePeriod=samplePeriod,sampleStart=sampleStart,applicable=applicable) "Observation window and data qualification";
+  Boolean dataOK "True if input validity and numerical checks pass";
+  Boolean violationNow "Valid requirement violation at the current instant";
   Boolean hazard "Hazard";
-  Boolean inDwell "In dwell";
-  Boolean qualifiedRecovery "Qualified recovery";
-  discrete Boolean seenDanger(start=false,fixed=true) "Seen danger";
-  discrete Modelica.Units.SI.Time enteredAt(start=0,fixed=true) "Entered at";
+  Boolean inDwell "Valid recovery condition following a danger event";
+  Boolean qualifiedRecovery "True when the required uninterrupted dwell has elapsed";
+  discrete Boolean seenDanger(start=false,fixed=true) "True after the first valid danger observation";
+  discrete Modelica.Units.SI.Time enteredAt(start=0,fixed=true) "Start time of the current recovery dwell";
 initial equation
   assert(recoveryDwell>=0,"Negative recovery dwell.");
 equation
@@ -118,5 +118,5 @@ algorithm
         Text(extent={{-65,-50},{65,-75}}, textString="t_rec", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
-    Documentation(info="<html><p>Measure elapsed seconds from the first qualified danger to completion of recoveryDwell in inRecoveryBand while danger is false. recoveryDwell defaults to 0.2 s and must be nonnegative. Leaving the band or losing validity restarts dwell. Missing recovery leaves the measurement unavailable; it does not imply a successful barrier. This retained specialist supports external windows and declares no deadline requirement. Prior-event state breaks the old initialization cycle.</p><p>The default fixed observation is [0,5) s. ExternalSingle instead observes only the first contiguous external gate; a later gate invalidates the history. useValidInput defaults to false; when enabled, false validity or nonfinite in-window data latch INVALID. Early normal termination or missing coverage is INCOMPLETE. DataStatus qualifies evidence independently of Verdict. Numeric availability and violation witnesses must be inspected separately. Stable identity, unitName and optional requirement metadata originate here and travel directly with result to a writer.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
+    Documentation(info="<html><p>Records the first valid <code>danger</code> condition, then waits for danger to clear and <code>inRecoveryBand</code> to remain true for <code>recoveryDwell</code>. Loss of validity or departure from the band interrupts the dwell.</p><p>Once <code>recovered</code> is true, <code>value</code> reports the delay from the first danger observation to dwell completion. Configure the observation window to include both events. This block reports recovery time without assigning a recovery requirement verdict.</p></html>"));
 end RecoveryTime;

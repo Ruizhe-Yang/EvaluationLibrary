@@ -1,35 +1,35 @@
 within EvaluationLibrary.Requirements;
-block ResponseTime "First qualified response with a maximum latency"
-  parameter String metricId=getInstanceName() "Stable identity of this retained specialist";
-  parameter String requirementId="" "Requirement identity, when configured";
-  parameter String requirementVersion="" "Interpreted requirement version";
-  parameter String unitName="s" "Engineering unit of the reported specialist value";
-  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete specialist result" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
-  Boolean terminalSeen(start=false,fixed=true) "Terminal seen";
-  discrete Boolean qualifiedViolation(start=false,fixed=true) "Qualified violation";
-  discrete Real qualifiedViolationTime(start=0,fixed=true) "Qualified violation time";
-  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Result status";
-  parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive window start, s";
-  parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive window end, s";
-  parameter Boolean applicable = true "Whether the analysis applies";
+block ResponseTime "Check the response latency after the first request"
+  parameter String metricId=getInstanceName() "Identifier carried by the result";
+  parameter String requirementId="" "Optional requirement identifier";
+  parameter String requirementVersion="" "Optional requirement version";
+  parameter String unitName="s" "Unit label for the reported value";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Value, qualification and requirement outcome" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
+  Boolean terminalSeen(start=false,fixed=true) "True after normal simulation termination";
+  discrete Boolean qualifiedViolation(start=false,fixed=true) "Latched valid requirement violation";
+  discrete Real qualifiedViolationTime(start=0,fixed=true) "Time of the first valid requirement violation";
+  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Qualification of the reported result";
+  parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive start of the observation window";
+  parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive end of the observation window";
+  parameter Boolean applicable = true "True if this assessment is applicable";
 
-  Modelica.Blocks.Interfaces.BooleanInput valid "Host-provided input validity" annotation(Placement(transformation(extent={{-106,42},{-94,54}}), iconTransformation(extent={{-106,42},{-94,54}})));
+  Modelica.Blocks.Interfaces.BooleanInput valid "Validity of the observed inputs" annotation(Placement(transformation(extent={{-106,42},{-94,54}}), iconTransformation(extent={{-106,42},{-94,54}})));
 
-  Modelica.Blocks.Interfaces.BooleanOutput inWindow "Current point lies in applicable window" annotation(Placement(transformation(extent={{94,76},{106,88}}), iconTransformation(extent={{94,76},{106,88}})));
-  output EvaluationLibrary.Utilities.Types.DataStatus dataState "Collection and data validity state";
-  Modelica.Blocks.Interfaces.RealOutput observedDuration(unit="s") "Accumulated valid duration" annotation(Placement(transformation(extent={{94,49},{106,61}}), iconTransformation(extent={{94,49},{106,61}})));
+  Modelica.Blocks.Interfaces.BooleanOutput inWindow "True inside the applicable observation window" annotation(Placement(transformation(extent={{94,76},{106,88}}), iconTransformation(extent={{94,76},{106,88}})));
+  output EvaluationLibrary.Utilities.Types.DataStatus dataState "Observation coverage and data validity";
+  Modelica.Blocks.Interfaces.RealOutput observedDuration(unit="s") "Accumulated valid observation duration" annotation(Placement(transformation(extent={{94,49},{106,61}}), iconTransformation(extent={{94,49},{106,61}})));
   parameter Modelica.Units.SI.Time deadline(min=0) = 0.5 "Maximum request-response delay in seconds, inclusive";
-  Modelica.Blocks.Interfaces.BooleanInput request "Request" annotation(Placement(transformation(extent={{-106,-6},{-94,6}}), iconTransformation(extent={{-106,-6},{-94,6}})));
-  Modelica.Blocks.Interfaces.BooleanInput response "Response" annotation(Placement(transformation(extent={{-106,-54},{-94,-42}}), iconTransformation(extent={{-106,-54},{-94,-42}})));
-  Modelica.Blocks.Interfaces.BooleanOutput triggered(start=false,fixed=true) "Triggered" annotation(Placement(transformation(extent={{94,21},{106,33}}), iconTransformation(extent={{94,21},{106,33}})));
-  Modelica.Blocks.Interfaces.BooleanOutput responded(start=false,fixed=true) "Responded" annotation(Placement(transformation(extent={{94,-6},{106,6}}), iconTransformation(extent={{94,-6},{106,6}})));
-  Modelica.Blocks.Interfaces.RealOutput triggerTime(unit="s",start=0,fixed=true) "Trigger time" annotation(Placement(transformation(extent={{94,-33},{106,-21}}), iconTransformation(extent={{94,-33},{106,-21}})));
-  Modelica.Blocks.Interfaces.RealOutput responseAt(unit="s",start=0,fixed=true) "Response at" annotation(Placement(transformation(extent={{94,-61},{106,-49}}), iconTransformation(extent={{94,-61},{106,-49}})));
-  Modelica.Blocks.Interfaces.RealOutput latency(unit="s") "Latency" annotation(Placement(transformation(extent={{94,-88},{106,-76}}), iconTransformation(extent={{94,-88},{106,-76}})));
-  output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement decision independent of observation completeness";
+  Modelica.Blocks.Interfaces.BooleanInput request "Observed request condition" annotation(Placement(transformation(extent={{-106,-6},{-94,6}}), iconTransformation(extent={{-106,-6},{-94,6}})));
+  Modelica.Blocks.Interfaces.BooleanInput response "Observed response condition" annotation(Placement(transformation(extent={{-106,-54},{-94,-42}}), iconTransformation(extent={{-106,-54},{-94,-42}})));
+  Modelica.Blocks.Interfaces.BooleanOutput triggered(start=false,fixed=true) "True after a valid request condition has been observed" annotation(Placement(transformation(extent={{94,21},{106,33}}), iconTransformation(extent={{94,21},{106,33}})));
+  Modelica.Blocks.Interfaces.BooleanOutput responded(start=false,fixed=true) "True after a valid response condition has been observed" annotation(Placement(transformation(extent={{94,-6},{106,6}}), iconTransformation(extent={{94,-6},{106,6}})));
+  Modelica.Blocks.Interfaces.RealOutput triggerTime(unit="s",start=0,fixed=true) "Time of the first valid request condition" annotation(Placement(transformation(extent={{94,-33},{106,-21}}), iconTransformation(extent={{94,-33},{106,-21}})));
+  Modelica.Blocks.Interfaces.RealOutput responseAt(unit="s",start=0,fixed=true) "Time of the first valid response condition" annotation(Placement(transformation(extent={{94,-61},{106,-49}}), iconTransformation(extent={{94,-61},{106,-49}})));
+  Modelica.Blocks.Interfaces.RealOutput latency(unit="s") "Elapsed time from request to response" annotation(Placement(transformation(extent={{94,-88},{106,-76}}), iconTransformation(extent={{94,-88},{106,-76}})));
+  output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement outcome, separate from data qualification";
 protected
-  EvaluationLibrary.Utilities.Internal.ContinuousEvidence evidence(windowStart=windowStart,windowEnd=windowEnd,applicable=applicable) "Evidence";
-  Boolean dataOK "Validity combined with the metric data domain";
+  EvaluationLibrary.Utilities.Internal.ContinuousEvidence evidence(windowStart=windowStart,windowEnd=windowEnd,applicable=applicable) "Observation coverage and data qualification";
+  Boolean dataOK "True if input validity and numerical checks pass";
   Boolean triggerNow "Trigger now";
   Boolean responseNow "Response now";
 initial equation
@@ -97,5 +97,5 @@ equation
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}}, preserveAspectRatio=true), graphics={Text(extent={{-96,99},{96,88}}, textColor={73,53,132}, textString="ResponseTime")}),
-    Documentation(info="<html><p>For the first qualified request measure seconds until actual response, with an inclusive deadline defaulting to 0.5 s. At complete coverage, no request is NOT_APPLICABLE; a matched response is classified against the deadline. A missing response whose deadline lies before windowEnd is VIOLATED; insufficient follow-up at the exclusive stop remains unresolved. Use EventAssessment for repeated FIFO tasks.</p><p>The fixed observation defaults to [0,5) s. valid is host-provided and false validity or a failed numeric-domain check inside the window latches INVALID. Positive valid duration is needed for duration-normalized values. A normal stop before full observation gives an INCOMPLETE complete result; DataStatus and Verdict remain separate.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
+    Documentation(info="<html><p>Records the first valid request condition and the first valid response condition at or after it in <code>[windowStart, windowEnd)</code>. Both inputs are interpreted as conditions, so a response already true when the request occurs can give zero latency. <code>latency</code> is meaningful only when <code>responded</code> is true.</p><p>On complete valid observation, a response satisfies the requirement when <code>latency &lt;= deadline</code>. No request gives <code>NOT_APPLICABLE</code>. A missing response violates the requirement only when the deadline lies strictly before the exclusive window end; otherwise the result remains undecided.</p></html>"));
 end ResponseTime;

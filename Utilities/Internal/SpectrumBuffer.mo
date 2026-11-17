@@ -1,12 +1,12 @@
 within EvaluationLibrary.Utilities.Internal;
-block SpectrumBuffer "Retain a declared finite set of same-grid samples"
-parameter Integer n(min=16,max=1024)=200 "Number of channels, records or configured items; at least one";
+block SpectrumBuffer "Store a bounded sequence of samples"
+parameter Integer n(min=16,max=1024)=200 "Maximum number of retained samples";
     Modelica.Blocks.Interfaces.RealInput u "Observed real signal in the declared engineering unit" annotation(Placement(transformation(origin={-100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,70},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanInput take "Take" annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanOutput ready "Ready" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanOutput overflow(start=false,fixed=true) "Overflow" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
-  output Real samples[n](each start=0,each fixed=true) "Samples";
-  output Integer count(start=0,fixed=true) "Count";
+  Modelica.Blocks.Interfaces.BooleanInput take "Store a sample on each rising edge" annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanOutput ready "The sample buffer is full" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanOutput overflow(start=false,fixed=true) "A sample was requested after the buffer became full" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
+  output Real samples[n](each start=0,each fixed=true) "Samples retained in acquisition order";
+  output Integer count(start=0,fixed=true) "Number of stored samples";
 initial equation
   assert(n>=16 and n<=1024,"Spectral cache must contain 16 to 1024 samples.");
 equation
@@ -44,5 +44,5 @@ algorithm
         Text(extent={{-55,-48},{55,-76}}, textString="finite", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
-    Documentation(info="<html><p>Bounded ordered sample buffer for finite spectra. Inputs retain the physical units or logical meaning stated by their declarations. Domain assertions and explicit availability flags are part of the contract.</p></html>"));
+    Documentation(info="<html><p>Append <code>u</code> on each rising edge of <code>take</code> until <code>n</code> samples have been stored. <code>ready</code> is true when the buffer is full. Further requests preserve the stored samples and latch <code>overflow</code>.</p><p>The buffer holds 16 to 1024 samples and is not reset during a run. The caller supplies a uniform sample clock and validates the sample values.</p></html>"));
 end SpectrumBuffer;

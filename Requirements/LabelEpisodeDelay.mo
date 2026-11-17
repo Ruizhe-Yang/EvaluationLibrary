@@ -1,29 +1,29 @@
 within EvaluationLibrary.Requirements;
-block LabelEpisodeDelay "Detection latency within the same labelled episode"
-  parameter String metricId=getInstanceName() "Stable identity of this retained specialist";
-  parameter String requirementId="" "Requirement identity, when configured";
-  parameter String requirementVersion="" "Interpreted requirement version";
-  parameter String unitName="s" "Engineering unit of the reported specialist value";
-  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete specialist result" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
-  Boolean terminalSeen(start=false,fixed=true) "Terminal seen";
-  discrete Boolean qualifiedViolation(start=false,fixed=true) "Qualified violation";
-  discrete Real qualifiedViolationTime(start=0,fixed=true) "Qualified violation time";
-  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Result status";
-  parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive observation start in seconds";
-  parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive observation end in seconds";
+block LabelEpisodeDelay "Measure detection latency within the first labelled episode"
+  parameter String metricId=getInstanceName() "Identifier carried by the result";
+  parameter String requirementId="" "Optional requirement identifier";
+  parameter String requirementVersion="" "Optional requirement version";
+  parameter String unitName="s" "Unit label for the reported value";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Value, qualification and requirement outcome" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
+  Boolean terminalSeen(start=false,fixed=true) "True after normal simulation termination";
+  discrete Boolean qualifiedViolation(start=false,fixed=true) "Latched valid requirement violation";
+  discrete Real qualifiedViolationTime(start=0,fixed=true) "Time of the first valid requirement violation";
+  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Qualification of the reported result";
+  parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive start of the observation window";
+  parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive end of the observation window";
   parameter Modelica.Units.SI.Time deadline(min=0) = 0.5 "Maximum request-response delay in seconds, inclusive";
-  parameter Boolean applicable = true "Whether this evaluation applies";
-  Modelica.Blocks.Interfaces.BooleanInput valid "Host declares the observed inputs valid" annotation(Placement(transformation(extent={{-106,42},{-94,54}}), iconTransformation(extent={{-106,42},{-94,54}})));
-  Modelica.Blocks.Interfaces.BooleanInput truth "Truth" annotation(Placement(transformation(extent={{-106,-6},{-94,6}}), iconTransformation(extent={{-106,-6},{-94,6}})));
-  Modelica.Blocks.Interfaces.BooleanInput detected "Detected" annotation(Placement(transformation(extent={{-106,-54},{-94,-42}}), iconTransformation(extent={{-106,-54},{-94,-42}})));
-  Modelica.Blocks.Interfaces.RealOutput latency(unit="s") "Latency" annotation(Placement(transformation(extent={{94,18},{106,30}}), iconTransformation(extent={{94,18},{106,30}})));
-  Modelica.Blocks.Interfaces.BooleanOutput detectedInEpisode "Detected in episode" annotation(Placement(transformation(extent={{94,-30},{106,-18}}), iconTransformation(extent={{94,-30},{106,-18}})));
-  output EvaluationLibrary.Utilities.Types.DataStatus dataState "Evidence qualification independent of requirement verdict";
-  output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement decision independent of observation completeness";
+  parameter Boolean applicable = true "True if this assessment is applicable";
+  Modelica.Blocks.Interfaces.BooleanInput valid "True if the observed inputs are valid" annotation(Placement(transformation(extent={{-106,42},{-94,54}}), iconTransformation(extent={{-106,42},{-94,54}})));
+  Modelica.Blocks.Interfaces.BooleanInput truth "Reference label defining the episode" annotation(Placement(transformation(extent={{-106,-6},{-94,6}}), iconTransformation(extent={{-106,-6},{-94,6}})));
+  Modelica.Blocks.Interfaces.BooleanInput detected "Observed diagnostic detection" annotation(Placement(transformation(extent={{-106,-54},{-94,-42}}), iconTransformation(extent={{-106,-54},{-94,-42}})));
+  Modelica.Blocks.Interfaces.RealOutput latency(unit="s") "Elapsed time from request to response" annotation(Placement(transformation(extent={{94,18},{106,30}}), iconTransformation(extent={{94,18},{106,30}})));
+  Modelica.Blocks.Interfaces.BooleanOutput detectedInEpisode "True after a detection within the first episode" annotation(Placement(transformation(extent={{94,-30},{106,-18}}), iconTransformation(extent={{94,-30},{106,-18}})));
+  output EvaluationLibrary.Utilities.Types.DataStatus dataState "Observation coverage and data validity";
+  output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement outcome, separate from data qualification";
 protected
-  EvaluationLibrary.Requirements.ResponseTime timer(windowStart=windowStart,windowEnd=windowEnd,deadline=deadline,applicable=applicable) "Timer";
-  discrete Boolean ended(start=false,fixed=true) "Ended";
-  Boolean firstEpisodeEnded "First episode ended";
+  EvaluationLibrary.Requirements.ResponseTime timer(windowStart=windowStart,windowEnd=windowEnd,deadline=deadline,applicable=applicable) "First-request response-time assessment";
+  discrete Boolean ended(start=false,fixed=true) "True after the first labelled episode has ended";
+  Boolean firstEpisodeEnded "Valid end of the first labelled episode";
 equation
   when terminal() then terminalSeen=true; end when;
   resultStatus=if verdict==EvaluationLibrary.Utilities.Types.Verdict.INVALID then EvaluationLibrary.Utilities.Types.DataStatus.INVALID
@@ -76,5 +76,5 @@ equation
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}}, preserveAspectRatio=true), graphics={Text(extent={{-96,99},{96,88}}, textColor={73,53,132}, textString="LabelEpisodeDelay")}),
-    Documentation(info="<html><p>Measure detection latency in the first truth episode using the first-request ResponseTime timer. detected qualifies only while truth remains true in that episode. deadline defaults to 0.5 s and is nonnegative. Episode termination without detection is a violation after complete observation; a later detection cannot repair the ended episode. No truth demand is not successful detection.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
+    Documentation(info="<html><p>Measures the interval from the first valid <code>truth</code> condition to a valid <code>detected</code> condition in that same episode. Once the first episode ends, later detections cannot satisfy it. <code>latency</code> is available only after <code>detectedInEpisode</code> becomes true.</p><p>Configure the fixed observation interval and inclusive <code>deadline</code>, and connect the validity signal. An episode that ends without detection violates the requirement once observation is complete. A request with insufficient follow-up remains undecided.</p></html>"));
 end LabelEpisodeDelay;

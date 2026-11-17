@@ -1,17 +1,17 @@
 within EvaluationLibrary.Signals;
-block FiniteDifference "Compute a finite difference only after two qualified samples"
-parameter Modelica.Units.SI.Time samplePeriod(min=0)=0.01 "Positive uniform sampling interval in seconds";
-  parameter Modelica.Units.SI.Time sampleStart=0 "Uniform sample grid origin in seconds";
-  parameter Boolean useValidInput=false "Expose the host-provided validity connector";
-    Modelica.Blocks.Interfaces.RealInput u "Observed real signal in the declared engineering unit" annotation(Placement(transformation(origin={-100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,70},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanInput valid if useValidInput "Host declares the observed inputs valid" annotation(Placement(transformation(origin={0,100},extent={{-10,-10},{10,10}}),iconTransformation(origin={0,100},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.RealOutput y(start=0,fixed=true) "Y" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanOutput available(start=false,fixed=true) "The numerical output exists in the current data domain" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
+block FiniteDifference "Backward difference of consecutive valid samples"
+parameter Modelica.Units.SI.Time samplePeriod(min=0)=0.01 "Uniform sampling interval; must be positive";
+  parameter Modelica.Units.SI.Time sampleStart=0 "Origin of the uniform sampling grid";
+  parameter Boolean useValidInput=false "Enable the external validity input";
+    Modelica.Blocks.Interfaces.RealInput u "Observed signal" annotation(Placement(transformation(origin={-100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanInput valid if useValidInput "External input-validity condition" annotation(Placement(transformation(origin={0,100},extent={{-10,-10},{10,10}}),iconTransformation(origin={0,100},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.RealOutput y(start=0,fixed=true) "Backward-difference derivative estimate" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanOutput available(start=false,fixed=true) "True when the numerical value is available" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
 protected
-  Modelica.Blocks.Interfaces.BooleanInput trust "Trust" annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
-  discrete Real previous(start=0,fixed=true) "Previous";
-  discrete Boolean wasValid(start=false,fixed=true) "Was valid";
-  Boolean eligible "Eligible";
+  Modelica.Blocks.Interfaces.BooleanInput trust "Internal validity signal" annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
+  discrete Real previous(start=0,fixed=true) "Previous sampled value";
+  discrete Boolean wasValid(start=false,fixed=true) "Validity at the previous sample";
+  Boolean eligible "Current sample validity";
 initial equation
   assert(samplePeriod>0,"Positive sample period required.");
 equation
@@ -37,5 +37,5 @@ equation
         Text(extent={{-65,-50},{65,-75}}, textString="Δu / Δt", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
-    Documentation(info="<html><p>At sampleStart+k*samplePeriod, return the difference of two consecutive qualified samples divided by samplePeriod. Defaults are 0 s and 0.01 s; the interval must be positive. y has the input unit per second. The first tick or an invalid preceding/current tick is unavailable, so a bad sample cannot be bridged into a derivative.</p></html>"));
+    Documentation(info="<html><p>Estimates the derivative as <code>(u - previous)/samplePeriod</code> on the grid <code>sampleStart + k*samplePeriod</code>. The output unit is the input unit per second.</p><p>The sampling period must be positive. The first sample and any pair containing an invalid or non-finite sample produce <code>available=false</code> and <code>y=0</code>. Enable <code>useValidInput</code> to supply an external validity condition. The output is held between ticks.</p></html>"));
 end FiniteDifference;

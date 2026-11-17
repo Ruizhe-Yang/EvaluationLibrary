@@ -1,11 +1,11 @@
 within EvaluationLibrary.Utilities.Functions;
-function FormatSummary "Format complete results and an explicit overall verdict"
+function FormatSummary "Format a result set and its overall verdict"
  input String runId "Run identity";
- input EvaluationLibrary.Utilities.Types.MetricResult records[:] "Complete records";
- input Boolean required[size(records,1)]=fill(true,size(records,1)) "Required items";
+ input EvaluationLibrary.Utilities.Types.MetricResult records[:] "Result records to include";
+ input Boolean required[size(records,1)]=fill(true,size(records,1)) "Records included in the overall verdict";
  output String text "One concise terminal report";
 protected
- EvaluationLibrary.Utilities.Types.Verdict overall "Overall";
+ EvaluationLibrary.Utilities.Types.Verdict overall "Qualified overall requirement verdict";
 algorithm
  overall:=EvaluationLibrary.Utilities.Functions.Aggregate({EvaluationLibrary.Utilities.Functions.QualifiedCode(Integer(records[i].dataStatus),Integer(records[i].verdict)) for i in 1:size(records,1)},required);
  text:="EvaluationLibrary | Run: "+runId+"\n--------------------------------------------------";
@@ -40,5 +40,5 @@ algorithm
         Text(extent={{-54.464,-56.805},{-10.212,-75.527}}, textString="all", textColor={108,88,49}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
-    Documentation(info="<html><p>Build one English report for all complete result records without dropping optional or inapplicable children. Read values and all metadata from the records, show unavailable values as N/A, and append available event counts, engineering severity and violation witnesses. required defaults to all true; QualifiedCode and Aggregate compute an explicit qualified overall verdict. This pure formatting function performs no file or console I/O and never alters evidence.</p></html>"));
+    Documentation(info="<html><p>Return a readable report containing every supplied record, including optional and not-applicable entries. Available violation times, event counts and severity levels are included; unavailable numerical values are shown as <code>N/A</code>.</p><p>The overall verdict is calculated with <code>QualifiedCode</code> and <code>Aggregate</code> using the <code>required</code> mask. All records are required by default. This function performs no file or console output.</p></html>"));
 end FormatSummary;

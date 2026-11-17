@@ -1,5 +1,5 @@
 within EvaluationLibrary.Examples;
-model WrappedAngleAndSeverity "Normalize radian angle differences and classify engineering impact internally"
+model WrappedAngleAndSeverity "Evaluate wrapped angular errors and configured severity levels"
  Modelica.Blocks.Sources.Ramp crossing(offset=3.1,height=0.2,duration=1) "Crossing" annotation(Placement(transformation(origin={-80,60},extent={{-10,-10},{10,10}})));
  Modelica.Blocks.Sources.Constant small(k=3.15) "Small" annotation(Placement(transformation(origin={-80,20},extent={{-10,-10},{10,10}})));
  Modelica.Blocks.Sources.Constant medium(k=2.9) "Medium" annotation(Placement(transformation(origin={-80,-20},extent={{-10,-10},{10,10}})));
@@ -24,5 +24,5 @@ equation
         Rectangle(extent={{64.48,-17.28},{68.8,-2.4}}, lineColor={0,0,127}, fillColor={235,235,235}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
         Rectangle(extent={{70.72,-17.28},{75.04,5.76}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
-      }),Documentation(info="<html><p>Normalize radian angle differences and classify engineering impact internally. All excitation, observation and result reporting are internal. No external input ports or result-field equations are required.</p><p>The ramp crosses pi while its reference is near minus pi. Wrapped differences stay small; position-like quantities must use Difference instead. The constant channels have sampled absolute errors about 0.0331853, 0.2831853 and 0.6831853 rad, hence Levels 0, 1 and 2. Equality belongs to the lower level. Level 2 also violates the configured band; these are case-specific levels.</p><p>The console lists each metric and its data qualification separately from its verdict. Statistics without a requirement remain UNDECIDED, including when numerical evidence is COMPLETE. See verification/example_verification.md for measured values and the actual compiler scope.</p></html>"));
+      }),Documentation(info="<html><p>Computes principal angular differences for a ramp and three constant signals relative to -3.1 rad. The constant absolute errors are approximately 0.0332, 0.2832 and 0.6832 rad, giving configured levels 0, 1 and 2. The largest error also violates the 0.5 rad bound. Inspect <code>assessment.y</code> and the console report.</p></html>"));
 end WrappedAngleAndSeverity;

@@ -1,17 +1,17 @@
 within EvaluationLibrary.Utilities.Internal;
-function oneSidedDFT "One sided dft"
-  input Real x[:] "X";
+function oneSidedDFT "Calculate non-negative discrete Fourier transform bins"
+  input Real x[:] "Finite uniformly spaced sample values";
   input Integer nBins "Highest nonnegative bin";
   input EvaluationLibrary.Utilities.Types.SpectralWindow window "Finite spectral window selection";
   input Real amplitudeFloor "Positive amplitude below which phase or ratios are undefined";
-  output Real bins[nBins+1,2] "Amplitude and phase";
+  output Real bins[nBins+1,2] "Peak amplitude and phase for each retained bin";
 protected
-  Integer n = size(x,1) "Number of channels, records or configured items; at least one";
-  Real w[size(x,1)] "W";
-  Real coherentSum "Coherent sum";
-  Real a "A";
-  Real b "B";
-  Real angle "Angle";
+  Integer n = size(x,1) "Number of input samples";
+  Real w[size(x,1)] "Sample weights";
+  Real coherentSum "Sum of sample weights";
+  Real a "Real part of the weighted Fourier sum";
+  Real b "Imaginary part of the weighted Fourier sum";
+  Real angle "Fourier angle for the current bin and sample";
 algorithm
   for j in 1:n loop
     w[j] := if window == EvaluationLibrary.Utilities.Types.SpectralWindow.Hann then
@@ -51,5 +51,5 @@ algorithm
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),
-    Documentation(info="<html><p>One sided dft. Inputs retain the physical units or logical meaning stated by their declarations. Domain assertions and explicit availability flags are part of the contract.</p></html>"));
+    Documentation(info="<html><p>Calculate peak amplitude and phase for bins zero through <code>nBins</code>. Rectangular or periodic Hann weights are normalised by their sum. Non-DC, non-Nyquist bins receive the one-sided factor of two.</p><p>Phase uses a cosine reference at the first sample and is set to zero when amplitude does not exceed <code>amplitudeFloor</code>. The caller supplies a finite, uniformly sampled record and valid array dimensions; this function does not check the input domain.</p></html>"));
 end oneSidedDFT;

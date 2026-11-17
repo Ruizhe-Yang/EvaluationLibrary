@@ -1,20 +1,20 @@
 within EvaluationLibrary.Response;
-block EventAssessment "Evaluate related event tasks with one window and explicit feedback"
+block EventAssessment "Assess multiple event tasks in a shared observation window"
  parameter Integer n(min=1)=1 "Number of independent event tasks";
- parameter String metricId[n]={"event"+String(i) for i in 1:n} "Stable metric identities";
- parameter String requirementId[n]=metricId "Requirement identities";
+ parameter String metricId[n]={"event"+String(i) for i in 1:n} "Identifiers carried by the results";
+ parameter String requirementId[n]=metricId "Requirement identifiers";
  parameter String requirementVersion[n]=fill("1",n) "Requirement versions";
  parameter EvaluationLibrary.Utilities.Types.EventMode mode[n]=fill(EvaluationLibrary.Utilities.Types.EventMode.RequestResponse,n) "Occurrence, FIFO request-response, or recovery";
  parameter EvaluationLibrary.Utilities.Types.EventRole role[n]=fill(EvaluationLibrary.Utilities.Types.EventRole.Observation,n) "Descriptive event role, retained in explanations";
  parameter Modelica.Units.SI.Time windowStart=0 "Inclusive shared observation start";
  parameter Modelica.Units.SI.Time windowStop=5 "Exclusive shared observation stop";
- parameter Boolean applicable=true "Whether this task set applies";
- parameter Boolean useValidInput=false "Expose shared host validity";
+ parameter Boolean applicable=true "True if these event tasks are applicable";
+ parameter Boolean useValidInput=false "Enable the shared input validity connector";
  parameter Modelica.Units.SI.Time deadline[n]=fill(0.2,n) "Maximum allowed request-response delay, inclusive";
  parameter Integer capacity(min=1)=32 "Maximum queued requests per task";
  parameter Modelica.Units.SI.Time recoveryDwell[n]=fill(0.2,n) "Required uninterrupted valid time in the recovery band";
  parameter Boolean useRecoverySignal=false "Use a real signal and internal band test for recovery tasks";
- parameter Real recoveryReference[n]=zeros(n) "Center of each recovery band";
+ parameter Real recoveryReference[n]=zeros(n) "Centre of each recovery band";
  parameter Real recoveryTolerance[n]=fill(0.1,n) "Inclusive absolute recovery band radius";
  Modelica.Blocks.Interfaces.BooleanInput request[n] "Observed event, protection request, or danger indication" annotation(Placement(transformation(extent={{-110,40},{-90,60}}),iconTransformation(extent={{-110,40},{-90,60}})));
  Modelica.Blocks.Interfaces.BooleanInput response[n] "Actual action feedback; recovery-band state if useRecoverySignal=false" annotation(Placement(transformation(extent={{-110,-60},{-90,-40}}),iconTransformation(extent={{-110,-60},{-90,-40}})));
@@ -31,24 +31,24 @@ block EventAssessment "Evaluate related event tasks with one window and explicit
  output Boolean recovered[n](each start=false,each fixed=true) "A full uninterrupted recovery dwell was observed";
 protected
  Real validTime[n](each start=0,each fixed=true) "Independent finite valid duration per event task";
- Modelica.Blocks.Interfaces.BooleanInput trusted "Trusted";
- EvaluationLibrary.Utilities.Internal.WindowEvidence gate(windowStart=windowStart,windowStop=windowStop,sampled=false,applicable=applicable) "Gate";
- Boolean inBand[n] "In band";
- Boolean inDwell[n] "In dwell";
- Boolean dwellComplete[n] "Dwell complete";
- Boolean expired[n] "Expired";
- Boolean dataOK[n] "Data ok";
- discrete Boolean invalidSeen[n](each start=false,each fixed=true) "Invalid seen";
+ Modelica.Blocks.Interfaces.BooleanInput trusted "Effective input validity";
+ EvaluationLibrary.Utilities.Internal.WindowEvidence gate(windowStart=windowStart,windowStop=windowStop,sampled=false,applicable=applicable) "Observation window and data qualification";
+ Boolean inBand[n] "Recovery signal lies within its inclusive band";
+ Boolean inDwell[n] "Valid recovery condition following a danger event";
+ Boolean dwellComplete[n] "Required uninterrupted recovery dwell has elapsed";
+ Boolean expired[n] "Oldest queued request has reached its deadline";
+ Boolean dataOK[n] "True if input validity and numerical checks pass";
+ discrete Boolean invalidSeen[n](each start=false,each fixed=true) "Latched indication of invalid input";
  discrete Boolean overflow[n](each start=false,each fixed=true) "Overflow";
- discrete Integer queued[n](each start=0,each fixed=true) "Queued";
- discrete Real timestamps[n,capacity](each start=0,each fixed=true) "Timestamps";
- discrete Real delaySum[n](each start=0,each fixed=true) "Delay sum";
- discrete Real firstMissed[n](each start=0,each fixed=true) "First missed";
- discrete Real dwellStart[n](each start=0,each fixed=true) "Dwell start";
- discrete Real recoveryDelay[n](each start=0,each fixed=true) "Recovery delay";
- EvaluationLibrary.Utilities.Types.DataStatus status[n] "Status";
- EvaluationLibrary.Utilities.Types.Verdict verdict[n] "Requirement decision independent of observation completeness";
- Boolean violated[n] "Violated";
+ discrete Integer queued[n](each start=0,each fixed=true) "Number of outstanding requests";
+ discrete Real timestamps[n,capacity](each start=0,each fixed=true) "Request times in FIFO order";
+ discrete Real delaySum[n](each start=0,each fixed=true) "Sum of matched response delays";
+ discrete Real firstMissed[n](each start=0,each fixed=true) "Time of the first expired request deadline";
+ discrete Real dwellStart[n](each start=0,each fixed=true) "Start of the current valid recovery dwell";
+ discrete Real recoveryDelay[n](each start=0,each fixed=true) "Delay from the first danger event to confirmed recovery";
+ EvaluationLibrary.Utilities.Types.DataStatus status[n] "Evidence qualification for each event task";
+ EvaluationLibrary.Utilities.Types.Verdict verdict[n] "Requirement outcome, separate from data qualification";
+ Boolean violated[n] "True if an event requirement has been violated";
 equation
  connect(valid,trusted);
  if not useValidInput then trusted=true; end if;
@@ -161,5 +161,5 @@ algorithm
         Line(points={{13,-45},{13,-49},{58,-49},{58,-45}}, color={64,64,64}, thickness=0.6, pattern=LinePattern.Solid),
         Text(extent={{-65,-50},{65,-75}}, textString="events[n]", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
-      }),Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),Documentation(info="<html><p>Use separate request and actual response inputs: issuing a protection command is not action feedback. Each task is an occurrence count, a finite FIFO of one-to-one request-response pairs, or recovery after the first danger. Roles are descriptive and cannot change the evidence rules. FirstEventTime is available only when eventCount is positive; counters and delays are delivered directly with every result.</p><p>The window is half open. Requests at a response instant are queued before responses; equality with a deadline is accepted. Older expired requests are removed first; responses cannot satisfy more than one request. A request with insufficient remaining window is censored. No demand yields NOT_APPLICABLE after a complete observation, not successful protection. Invalid intervals invalidate history and flush pending pairs, preventing evidence across the gap. Queue overflow is INVALID.</p><p>Recovery requires danger to cease and a contiguous valid dwell in the recovery band. With useRecoverySignal=true, the band test is internal and uses the finite real signal, reference and inclusive tolerance; otherwise response is the observed band state. Leaving the band or losing validity restarts the dwell. A danger without recovery by a complete window is VIOLATED. Event counts need no TimeMean or record-building intermediate.</p></html>"));
+      }),Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),Documentation(info="<html><p>Evaluates <code>n</code> independent tasks over <code>[windowStart, windowStop)</code>. <code>Occurrence</code> counts request rising edges. <code>RequestResponse</code> matches each response rising edge to the oldest queued request and reports mean matched delay. <code>Recovery</code> reports the delay from the first danger event to a completed recovery dwell.</p><p>Connect request and actual feedback signals. For recovery, <code>request</code> denotes danger and must become false; <code>response</code> supplies the recovery-band condition unless <code>useRecoverySignal=true</code> enables the internal real-signal band test. The dwell must be uninterrupted and valid. <code>deadline</code> is inclusive, and same-instant request and response events can be matched.</p><p>Each <code>y[i]</code> carries its value, qualification, verdict and event counts. A completed request-response or recovery window without a request is not applicable. Incomplete follow-up is censored; queue overflow or invalid observations invalidate the affected evidence. <code>role</code> is descriptive metadata and does not change the calculation.</p></html>"));
 end EventAssessment;

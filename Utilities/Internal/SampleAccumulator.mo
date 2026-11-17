@@ -1,15 +1,15 @@
 within EvaluationLibrary.Utilities.Internal;
-block SampleAccumulator "Accumulate qualified samples with stable online variance"
+block SampleAccumulator "Accumulate sample moments and extrema"
 Modelica.Blocks.Interfaces.RealInput u "Observed real signal in the declared engineering unit" annotation(Placement(transformation(origin={-100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,70},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanInput take "Take" annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.IntegerOutput count(start=0,fixed=true) "Count" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.RealOutput average(start=0,fixed=true) "Average" annotation(Placement(transformation(origin={100,50},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,50},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.RealOutput m2(start=0,fixed=true) "M2" annotation(Placement(transformation(origin={100,30},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,30},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.RealOutput sumSquare(start=0,fixed=true) "Sum square" annotation(Placement(transformation(origin={100,10},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,10},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.RealOutput minimum(start=0,fixed=true) "Minimum" annotation(Placement(transformation(origin={100,-10},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-10},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.RealOutput maximum(start=0,fixed=true) "Maximum" annotation(Placement(transformation(origin={100,-30},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-30},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.RealOutput argminTime(unit="s",start=0,fixed=true) "Argmin time" annotation(Placement(transformation(origin={100,-50},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-50},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.RealOutput argmaxTime(unit="s",start=0,fixed=true) "Argmax time" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanInput take "Accept a sample on each rising edge" annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.IntegerOutput count(start=0,fixed=true) "Number of accepted samples" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.RealOutput average(start=0,fixed=true) "Running sample mean" annotation(Placement(transformation(origin={100,50},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,50},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.RealOutput m2(start=0,fixed=true) "Sum of squared deviations from the running mean" annotation(Placement(transformation(origin={100,30},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,30},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.RealOutput sumSquare(start=0,fixed=true) "Sum of squared sample values" annotation(Placement(transformation(origin={100,10},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,10},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.RealOutput minimum(start=0,fixed=true) "Smallest accepted sample" annotation(Placement(transformation(origin={100,-10},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-10},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.RealOutput maximum(start=0,fixed=true) "Largest accepted sample" annotation(Placement(transformation(origin={100,-30},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-30},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.RealOutput argminTime(unit="s",start=0,fixed=true) "First occurrence time of the sampled minimum" annotation(Placement(transformation(origin={100,-50},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-50},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.RealOutput argmaxTime(unit="s",start=0,fixed=true) "First occurrence time of the sampled maximum" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
 algorithm
   when take then
     count:=pre(count)+1;
@@ -38,5 +38,5 @@ algorithm
         Text(extent={{-70,-59},{70,-80}}, textString="n, mean, M2", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
-    Documentation(info="<html><p>Shared uniform-sample accumulation with extrema. Inputs retain the physical units or logical meaning stated by their declarations. Domain assertions and explicit availability flags are part of the contract.</p></html>"));
+    Documentation(info="<html><p>On each rising edge of <code>take</code>, add <code>u</code> to the sample count, running mean, sum of squares and sum of squared deviations <code>m2</code>. The mean and <code>m2</code> use an incremental variance calculation.</p><p>Track sample minima and maxima with their first occurrence times. Outputs start at zero and are not reset during a run. The caller must provide valid samples and interpret extrema only after at least one sample has been accepted.</p></html>"));
 end SampleAccumulator;

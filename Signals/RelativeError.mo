@@ -1,10 +1,10 @@
 within EvaluationLibrary.Signals;
-block RelativeError "Compute relative error with an explicit denominator floor"
-parameter Real referenceFloor(min=0)=1e-9 "Positive reference magnitude floor; smaller magnitudes are undefined";
-  Modelica.Blocks.Interfaces.RealInput u "Observed real signal in the declared engineering unit" annotation(Placement(transformation(origin={-100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,70},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.RealInput reference "Declared reference in the same engineering unit" annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.RealOutput y "Y" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanOutput available "The numerical output exists in the current data domain" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
+block RelativeError "Signed relative error with a reference magnitude limit"
+parameter Real referenceFloor(min=0)=1e-9 "Reference magnitude floor for numerical availability";
+  Modelica.Blocks.Interfaces.RealInput u "Observed signal" annotation(Placement(transformation(origin={-100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.RealInput reference "Reference signal in the same unit" annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.RealOutput y "Dimensionless signed relative error" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanOutput available "True when the numerical value is available" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
 initial equation
   assert(referenceFloor>0,"Reference floor must be positive.");
 equation
@@ -23,5 +23,5 @@ equation
         Text(extent={{-65,-50},{65,-75}}, textString="|ref| ≥ floor", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
-    Documentation(info="<html><p>Return (u-reference)/abs(reference), a dimensionless signed relative error. referenceFloor defaults to 1e-9 in the reference unit and must be positive; absolute reference magnitude at least this floor is accepted. A zero or too-small reference makes the result unavailable rather than supplying zero error.</p></html>"));
+    Documentation(info="<html><p>Computes <code>(u - reference)/abs(reference)</code> as a dimensionless value. Both inputs must be finite and <code>abs(reference)</code> must be at least <code>referenceFloor</code>. The floor must be positive and uses the reference unit. Outside this domain, <code>available=false</code> and <code>y=0</code>.</p></html>"));
 end RelativeError;

@@ -1,5 +1,5 @@
 within;
-package EvaluationLibrary "Read-only metrics, explicit evidence qualification and structured result reporting."
+package EvaluationLibrary "Signal metrics, requirement checks and qualified result reporting"
   extends Modelica.Icons.Package;
   annotation(Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={
@@ -11,5 +11,5 @@ package EvaluationLibrary "Read-only metrics, explicit evidence qualification an
         Line(points={{32.2,6.44},{56.12,6.44}}, color={128,128,128}, thickness=0.65, pattern=LinePattern.Solid),
         Line(points={{32.2,-21.16},{56.12,-21.16}}, color={128,128,128}, thickness=0.65, pattern=LinePattern.Solid)
       }),
-    uses(Modelica(version="4.0.0")), version="0.4.0", Documentation(info="<html><p>EvaluationLibrary 0.4.0 provides read-only multichannel and event assessment, retained specialist metrics, explicit evidence qualification and direct complete-result reporting. Only Modelica Standard Library 4.0.0 is required. Begin with UsersGuide.GettingStarted and the nine self-contained Examples. DataStatus is independent of Verdict; observation incompleteness cannot imply satisfaction.</p></html>"));
+    uses(Modelica(version="4.0.0")), version="1.0.0", Documentation(info="<html><p><b>EvaluationLibrary</b> provides signal statistics, event and response measurements, requirement checks, comparisons and finite-window frequency analysis. Complete results carry numerical availability, data status and requirement verdicts to console, CSV and text writers.</p><p>The library requires Modelica Standard Library 4.0.0. Begin with <a href=\"modelica://EvaluationLibrary.UsersGuide.GettingStarted\">GettingStarted</a> and <a href=\"modelica://EvaluationLibrary.Examples.MultiSignalAssessment\">MultiSignalAssessment</a>. The <a href=\"modelica://EvaluationLibrary.UsersGuide\">User's Guide</a> describes observation conventions and limitations. Each public block documents its inputs, parameters and numerical interpretation.</p></html>"));
 end EvaluationLibrary;

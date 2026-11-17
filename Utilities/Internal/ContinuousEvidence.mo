@@ -1,10 +1,10 @@
 within EvaluationLibrary.Utilities.Internal;
-block ContinuousEvidence "Continuous observation coverage and latched invalidity"
+block ContinuousEvidence "Track a fixed continuous observation window"
   parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive window start, s";
   parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive window end, s";
   parameter Boolean applicable = true "Whether the analysis applies";
 
-  input Boolean dataOK "Already checked input validity and numerical domain";
+  input Boolean dataOK "Input validity and numerical-domain condition checked by the caller";
 
   Modelica.Blocks.Interfaces.BooleanOutput inWindow "Current point lies in applicable window" annotation(Placement(transformation(extent={{94,18},{106,30}}), iconTransformation(extent={{94,18},{106,30}})));
   output EvaluationLibrary.Utilities.Types.DataStatus dataState "Collection and data validity state";
@@ -12,9 +12,9 @@ block ContinuousEvidence "Continuous observation coverage and latched invalidity
   output Modelica.Units.SI.Time totalObservedDuration "Observed window duration, including invalid intervals";
 protected
 
-  parameter Modelica.Units.SI.Time simulationStart(fixed=false) "Observed simulation initialization time";
-  Boolean invalidSeen "Invalid seen";
-  Boolean sufficient "Sufficient";
+  parameter Modelica.Units.SI.Time simulationStart(fixed=false) "Simulation initialisation time";
+  Boolean invalidSeen "Invalid input has occurred in the observation window";
+  Boolean sufficient "Positive valid observation duration is available";
 
 initial equation
   simulationStart = time;
@@ -50,5 +50,5 @@ equation
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),
-    Documentation(info="<html><p>Continuous observation coverage and latched invalidity. Inputs retain the physical units or logical meaning stated by their declarations. Domain assertions and explicit availability flags are part of the contract.</p></html>"));
+    Documentation(info="<html><p>Track the applicable half-open interval <code>[windowStart, windowEnd)</code>. <code>totalObservedDuration</code> includes all observed time in the interval, whereas <code>observedDuration</code> integrates only time for which <code>dataOK</code> is true. Any invalid input in the active window is latched.</p><p>After the window closes, evidence is complete only if the simulation began no later than the window start and some valid duration was observed. This helper remains <code>PENDING</code> before <code>windowEnd</code>; a public block may separately qualify an early stop.</p></html>"));
 end ContinuousEvidence;

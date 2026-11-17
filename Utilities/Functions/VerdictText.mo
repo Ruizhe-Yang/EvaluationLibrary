@@ -1,8 +1,8 @@
 within EvaluationLibrary.Utilities.Functions;
-function VerdictText "Convert a verdict to its stable output label"
+function VerdictText "Return the text label of a verdict"
   extends Modelica.Icons.Function;
 input EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement decision independent of observation completeness";
-  output String text "Text";
+  output String text "Uppercase verdict label";
 algorithm
   text:=if verdict==EvaluationLibrary.Utilities.Types.Verdict.UNDECIDED then "UNDECIDED" elseif verdict==EvaluationLibrary.Utilities.Types.Verdict.SATISFIED then "SATISFIED"
     elseif verdict==EvaluationLibrary.Utilities.Types.Verdict.VIOLATED then "VIOLATED" elseif verdict==EvaluationLibrary.Utilities.Types.Verdict.INVALID then "INVALID" else "NOT_APPLICABLE";
@@ -15,5 +15,5 @@ algorithm
         Line(points={{-17.871,-0.639},{10.212,-0.639}}, color={64,64,64}, thickness=0.8, pattern=LinePattern.Solid, arrow={Arrow.None,Arrow.Filled}),
         Text(extent={{2.553,17.232},{59.57,-17.659}}, textString="\"abc\"", textColor={108,88,49}, fontSize=0)
       }),
-    Documentation(info="<html><p>Verdict text. Inputs retain the physical units or logical meaning stated by their declarations. Domain assertions and explicit availability flags are part of the contract.</p></html>"));
+    Documentation(info="<html><p>Return the uppercase label of the supplied <code>Types.Verdict</code> value for use in reports.</p></html>"));
 end VerdictText;

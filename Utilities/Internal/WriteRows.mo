@@ -1,23 +1,23 @@
 within EvaluationLibrary.Utilities.Internal;
-impure function WriteRows "Write one complete result set and report its outcome to the terminal"
+impure function WriteRows "Write a result set to a file or the console"
   extends Modelica.Icons.Function;
   input String path "Output path; ignored for console output";
   input String runId "Stable run identity";
-  input EvaluationLibrary.Utilities.Types.MetricResult records[:] "Records";
+  input EvaluationLibrary.Utilities.Types.MetricResult records[:] "Result records to write";
   input EvaluationLibrary.Utilities.Types.WritePolicy writePolicy=EvaluationLibrary.Utilities.Types.WritePolicy.RejectExisting "Explicit existing-file replacement policy";
-  input Boolean csv=false "Csv";
-  input Boolean console=false "Console";
+  input Boolean csv=false "Write CSV with a header instead of concise text";
+  input Boolean console=false "Write to the terminal instead of a file";
   input String resultSetId="" "Identifier included in the audit message";
   input Modelica.Units.SI.Time simulationTime=0 "Simulation instant of export";
   input Boolean logToConsole=true "Log success or skip once per call";
-  output Boolean written "Written";
-  output Boolean skippedExisting "Skipped existing";
+  output Boolean written "The result set was written successfully";
+  output Boolean skippedExisting "An existing destination was preserved";
 protected
-  Boolean exists "Exists";
-  Boolean logged "Logged";
-  String target "Declared target value or condition";
-  String formatName "Format name";
-  String action "Action";
+  Boolean exists "The destination file already exists";
+  Boolean logged "The output-operation message was printed";
+  String target "Output destination; empty for the terminal";
+  String formatName "Human-readable output format";
+  String action "Description of the completed or skipped operation";
 algorithm
   assert(console or Modelica.Utilities.Strings.length(path)>0,
     "WriteRows requires a non-empty destination path for file exports.");
@@ -75,5 +75,5 @@ algorithm
         Line(points={{7.659,-58.507},{51.911,-58.507}}, color={108,88,49}, thickness=1.2, pattern=LinePattern.Solid),
         Text(extent={{-55.315,-49.146},{-10.212,-72.123}}, textString="I/O", textColor={108,88,49}, fontSize=0)
       }),
-    Documentation(info="<html><p>Write rows. Inputs retain the physical units or logical meaning stated by their declarations. Domain assertions and explicit availability flags are part of the contract.</p></html>"));
+    Documentation(info="<html><p>Write every supplied result as CSV or concise text using <code>Functions.FormatRow</code>. CSV output includes a header. <code>console=true</code> sends the output to the terminal and ignores <code>path</code>.</p><p>For file output, <code>RejectExisting</code> leaves an existing destination unchanged and returns <code>skippedExisting=true</code>; <code>Overwrite</code> removes it before writing. <code>written</code> reports completion. Optional console logging describes the outcome. File errors may stop the simulation; this function does not change result verdicts.</p></html>"));
 end WriteRows;

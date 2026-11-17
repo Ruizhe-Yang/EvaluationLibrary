@@ -1,5 +1,5 @@
 within EvaluationLibrary.Utilities.Internal;
-function AdvanceFIFO "Advance a finite request-response FIFO from explicit previous state"
+function AdvanceFIFO "Update a bounded request-response queue"
  input Boolean initializing "Reset every stored state before processing initial observations";
  input Boolean collecting "Current instant belongs to the half-open observation window";
  input Boolean closing "Observation has closed";
@@ -97,5 +97,5 @@ algorithm
         Text(extent={{-54.464,-50.848},{-0.851,-72.123}}, textString="FIFO", textColor={108,88,49}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
-    Inline=false,Documentation(info="<html><p>Pure state transition shared by RepeatedResponse and its ResponseDeadline specialization. Requests are admitted before same-instant responses; equality with a deadline is accepted. Retained delay capacity and queue capacity are distinct. A closing boundary censors follow-up that lies outside the half-open window. Explicit previous state prevents a metadata consumer from introducing a discrete initialization algebraic cycle. No mathematical threshold, pairing order or stored-delay definition changes.</p></html>"));
+    Inline=false,Documentation(info="<html><p>Advance the request queue and retained response-delay history from the supplied previous state. Valid rising edges are paired in first-in, first-out order. A request is admitted before a response at the same instant, and a response at its deadline is accepted.</p><p>Queue capacity and retained-delay capacity are checked separately; exceeding either latches <code>overflow</code>. At closing, an outstanding request is timed out only if its deadline lies before <code>windowStop</code> and has been observed. Remaining requests are censored. The caller supplies correctly sized arrays and the observation-window state.</p></html>"));
 end AdvanceFIFO;

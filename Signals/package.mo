@@ -1,5 +1,5 @@
 within EvaluationLibrary;
-package Signals "Signals"
+package Signals "Signal transformations and data validity"
   extends Modelica.Icons.Package;
   annotation(Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={
@@ -9,5 +9,5 @@ package Signals "Signals"
         Text(extent={{-11.96,35.88},{30.36,-29.44}}, textString="Δ", textColor={0,0,127}, fontSize=0),
         Line(points={{39.56,2.76},{60.72,2.76}}, color={0,0,127}, thickness=0.8, pattern=LinePattern.Solid, arrow={Arrow.None,Arrow.Filled})
       }));
-  annotation(Documentation(info="<html><p>package supports the single complete-result and explicit qualification contract. See the parameter and field descriptions for its numerical or logical meaning.</p></html>"));
+  annotation(Documentation(info="<html><p>Signal blocks for differences, relative and angular errors, sampled differentiation and input qualification. These blocks expose numerical outputs and validity flags without an observation-window verdict.</p></html>"));
 end Signals;

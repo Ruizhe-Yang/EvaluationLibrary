@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="-115 -115 230 230" role="img" aria-labelledby="title"><title id="title">WithinBand: original Modelica icon</title><rect x="-90" y="-85" width="180" height="170" rx="0" fill="rgb(255,255,255)" stroke="rgb(64,64,64)" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="-64" y="-38" width="128" height="54" rx="0" fill="rgb(245,245,245)" stroke="rgb(128,128,128)" stroke-width="0.98" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="-64,-11 64,-11" fill="none" stroke="rgb(128,128,128)" stroke-width="1.26" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 4"/>
+<polyline points="-64,-2 -45,-23 -25,3 -7,-19 12,-3 33,-29 64,-13" fill="none" stroke="rgb(0,0,127)" stroke-width="2.94" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="-50,-60 -50,-43" fill="none" stroke="rgb(128,128,128)" stroke-width="1.82" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="-50,-43 -53,-51 -47,-51" fill="rgb(128,128,128)" stroke="rgb(128,128,128)"/>
+<polyline points="-50,38 -50,21" fill="none" stroke="rgb(128,128,128)" stroke-width="1.82" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="-50,21 -47,29 -53,29" fill="rgb(128,128,128)" stroke="rgb(128,128,128)"/>
+<text x="0" y="62.5" font-family="Arial,DejaVu Sans,sans-serif" font-size="17" text-anchor="middle" dominant-baseline="central" fill="rgb(64,64,64)">[L-tol,U+tol]</text></svg>

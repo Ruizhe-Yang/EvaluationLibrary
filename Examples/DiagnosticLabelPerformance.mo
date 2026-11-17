@@ -1,6 +1,6 @@
 within EvaluationLibrary.Examples;
-model DiagnosticLabelPerformance "Measure diagnostic labels against independent truth"
- Modelica.Blocks.Sources.BooleanPulse truth(period=1,width=50,startTime=0) "Truth" annotation(Placement(transformation(origin={-80,40},extent={{-10,-10},{10,10}})));
+model DiagnosticLabelPerformance "Evaluate Boolean diagnostic decisions against reference labels"
+ Modelica.Blocks.Sources.BooleanPulse truth(period=1,width=50,startTime=0) "Reference label defining the episode" annotation(Placement(transformation(origin={-80,40},extent={{-10,-10},{10,10}})));
  Modelica.Blocks.Sources.BooleanPulse decision(period=1,width=50,startTime=0.25) "Decision" annotation(Placement(transformation(origin={-80,-40},extent={{-10,-10},{10,10}})));
  EvaluationLibrary.Comparison.LabelPerformance diagnostic(metricId="diagnostic_accuracy",windowStop=2,samplePeriod=0.25) "Diagnostic" annotation(Placement(transformation(origin={0,0},extent={{-10,-10},{10,10}})));
  EvaluationLibrary.Results.ConsoleWriter report(n=8,runId="diagnostic") "Report" annotation(Placement(transformation(origin={80,0},extent={{-10,-10},{10,10}})));
@@ -20,5 +20,5 @@ equation
         Text(extent={{17.92,-0.48},{37.6,-17.28}}, textString="FP", textColor={64,64,64}, fontSize=0),
         Text(extent={{42.4,-0.48},{62.08,-17.28}}, textString="TN", textColor={0,0,127}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
-      }),Documentation(info="<html><p>Measure diagnostic labels against independent truth. All excitation, observation and result reporting are internal. No external input ports or result-field equations are required.</p><p>On the declared eight-sample grid, truth and delayed labels produce TP=2, TN=2, FP=2 and FN=2. Accuracy, precision, recall and specificity are 0.5 with explicit denominator availability. No diagnostic controller or fault injection is present.</p><p>The console lists each metric and its data qualification separately from its verdict. Statistics without a requirement remain UNDECIDED, including when numerical evidence is COMPLETE. See verification/example_verification.md for measured values and the actual compiler scope.</p></html>"));
+      }),Documentation(info="<html><p>Compares reference labels with decisions delayed by 0.25 s on an eight-sample grid. Inspect the confusion counts and <code>diagnostic.y</code>: TP, TN, FP and FN each equal 2, giving accuracy, precision, recall and specificity of 0.5. <code>report</code> prints the eight qualified results.</p></html>"));
 end DiagnosticLabelPerformance;

@@ -1,10 +1,10 @@
 within EvaluationLibrary.Utilities.Functions;
-function SafeIdentifier "Check an identifier used in an output filename"
+function SafeIdentifier "Check a filename-safe identifier"
   extends Modelica.Icons.Function;
-input String value "Value";
-  output Boolean accepted "Accepted";
+input String value "Identifier to check";
+  output Boolean accepted "True if every character is permitted and the identifier is non-empty";
 protected
-  String ch "Ch";
+  String ch "Current character";
 algorithm
   accepted:=Modelica.Utilities.Strings.length(value)>0;
   for i in 1:Modelica.Utilities.Strings.length(value) loop
@@ -20,5 +20,5 @@ algorithm
         Line(points={{19.9985,-1.49},{31.3168,-13.404},{53.3577,15.1896}}, color={75,138,73}, thickness=1.5, pattern=LinePattern.Solid),
         Text(extent={{-37.444,-45.742},{37.444,-69.57}}, textString="ID", textColor={108,88,49}, fontSize=0)
       }),
-    Documentation(info="<html><p>Safe identifier. Inputs retain the physical units or logical meaning stated by their declarations. Domain assertions and explicit availability flags are part of the contract.</p></html>"));
+    Documentation(info="<html><p>Return true for a non-empty identifier containing only ASCII letters, digits, underscores and hyphens. This function checks an identifier, not a complete filesystem path.</p></html>"));
 end SafeIdentifier;

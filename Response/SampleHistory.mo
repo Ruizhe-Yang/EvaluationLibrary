@@ -1,14 +1,14 @@
 within EvaluationLibrary.Response;
-block SampleHistory "Finite ordered samples and scheduled timestamps"
-  parameter String metricId=getInstanceName() "Stable identity of this retained specialist";
-  parameter String requirementId="" "Requirement identity, when configured";
-  parameter String requirementVersion="" "Interpreted requirement version";
-  parameter String unitName="1" "Engineering unit of the reported specialist value";
-  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete specialist result" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
-  Boolean terminalSeen(start=false,fixed=true) "Terminal seen";
-  discrete Boolean qualifiedViolation(start=false,fixed=true) "Qualified violation";
-  discrete Real qualifiedViolationTime(start=0,fixed=true) "Qualified violation time";
-  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Result status";
+block SampleHistory "Store a bounded sequence of samples and scheduled times"
+  parameter String metricId=getInstanceName() "Identifier carried by the result";
+  parameter String requirementId="" "Optional requirement identifier";
+  parameter String requirementVersion="" "Optional requirement version";
+  parameter String unitName="1" "Unit label for the reported value";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Value, qualification and requirement outcome" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
+  Boolean terminalSeen(start=false,fixed=true) "True after normal simulation termination";
+  discrete Boolean qualifiedViolation(start=false,fixed=true) "Latched valid requirement violation";
+  discrete Real qualifiedViolationTime(start=0,fixed=true) "Time of the first valid requirement violation";
+  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Qualification of the reported result";
   parameter Integer n(min=2,max=4096) = 128 "Number of ticks to retain";
   parameter Modelica.Units.SI.Time startTime = 0 "First tick, s";
   parameter Modelica.Units.SI.Time samplePeriod(min=Modelica.Constants.small) = 0.02 "Tick period, s";
@@ -22,8 +22,8 @@ block SampleHistory "Finite ordered samples and scheduled timestamps"
   Modelica.Blocks.Interfaces.IntegerOutput count "Accepted samples" annotation(Placement(transformation(extent={{94,-6},{106,6}}), iconTransformation(extent={{94,-6},{106,6}})));
 protected
   EvaluationLibrary.Utilities.Internal.SampledEvidence evidence(windowStart=startTime,windowEnd=endTime,samplePeriod=samplePeriod,
-      minimumSamples=n,applicable=applicable) "Evidence";
-  Boolean dataOK "Data ok";
+      minimumSamples=n,applicable=applicable) "Observation coverage and data qualification";
+  Boolean dataOK "True if input validity and numerical checks pass";
 initial equation
   assert(n>=2 and n<=4096 and samplePeriod>0, "History length or period outside supported range.");
 equation
@@ -78,5 +78,5 @@ equation
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),
-    Documentation(info="<html><p>Retain n samples and scheduled timestamps beginning at startTime with samplePeriod spacing. Defaults are n=128, startTime=0 s and samplePeriod=0.02 s; n is between 2 and 4096 and the period is positive. The exclusive record end is startTime+n*samplePeriod. The result value is accepted count, while samples remains the trajectory. Full scheduled coverage and validity are required for COMPLETE.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
+    Documentation(info="<html><p>Stores up to <code>n</code> valid finite samples on a uniform grid starting at <code>startTime</code>. <code>stamps</code> contains the scheduled grid times, <code>count</code> gives accepted samples and <code>samples</code> stores accepted values in order.</p><p>Set <code>n</code> between 2 and 4096 and a positive <code>samplePeriod</code>. Connect <code>valid</code>. Invalid ticks make the history invalid; after such a gap the scheduled timestamps must not be interpreted as timestamps of the packed accepted values. The scalar result reports the accepted count.</p></html>"));
 end SampleHistory;

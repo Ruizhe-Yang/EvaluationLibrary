@@ -1,14 +1,14 @@
 within EvaluationLibrary.Requirements;
-block NumericRequirement "Interpret a qualified scalar using explicit numeric bounds"
-  parameter String metricId=getInstanceName() "Stable identity of this retained specialist";
-  parameter String requirementId="" "Requirement identity, when configured";
-  parameter String requirementVersion="" "Interpreted requirement version";
-  parameter String unitName="1" "Engineering unit of the reported specialist value";
-  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete specialist result" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
-  Boolean terminalSeen(start=false,fixed=true) "Terminal seen";
-  discrete Boolean qualifiedViolation(start=false,fixed=true) "Qualified violation";
-  discrete Real qualifiedViolationTime(start=0,fixed=true) "Qualified violation time";
-  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Result status";
+block NumericRequirement "Apply numerical acceptance bounds to an existing metric"
+  parameter String metricId=getInstanceName() "Identifier carried by the result";
+  parameter String requirementId="" "Optional requirement identifier";
+  parameter String requirementVersion="" "Optional requirement version";
+  parameter String unitName="1" "Unit label for the reported value";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Value, qualification and requirement outcome" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
+  Boolean terminalSeen(start=false,fixed=true) "True after normal simulation termination";
+  discrete Boolean qualifiedViolation(start=false,fixed=true) "Latched valid requirement violation";
+  discrete Real qualifiedViolationTime(start=0,fixed=true) "Time of the first valid requirement violation";
+  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Qualification of the reported result";
   parameter EvaluationLibrary.Utilities.Types.NumericComparison comparison = EvaluationLibrary.Utilities.Types.NumericComparison.Inside "Numeric bound interpretation";
   parameter Real lower = 0 "Inclusive lower limit";
   parameter Real upper = 1 "Inclusive upper limit";
@@ -69,5 +69,5 @@ equation
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),
-    Documentation(info="<html><p>Classify a supplied finite numerical value using the explicit NumericComparison mode and inclusive lower/upper bounds, default Inside and bounds zero and one. defined declares whether the numeric evidence exists; undefined evidence is unresolved rather than zero success. The input evidence state independently controls qualification and prevents an incomplete or invalid value from passing.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
+    Documentation(info="<html><p>Interprets <code>value</code> using the supplied <code>defined</code> flag and <code>dataState</code>. Choose <code>AtMost</code>, <code>AtLeast</code> or <code>Inside</code> to apply an inclusive upper bound, lower bound or interval. The signed <code>margin</code> is non-negative for an accepted value.</p><p>A requirement verdict is issued only for complete evidence with a defined finite value. Missing coverage remains undecided and invalid input remains invalid. This block does not collect a new observation window; duration and sample-count metadata are not inferred.</p></html>"));
 end NumericRequirement;

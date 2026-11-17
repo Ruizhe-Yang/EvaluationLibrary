@@ -1,8 +1,8 @@
 within EvaluationLibrary.Utilities.Interfaces;
-connector MetricInput "Complete, fixed-size qualified-result input"
+connector MetricInput "Input connector for a structured evaluation result"
   input String metricId "Stable metric identity";
   input String requirementId "Requirement identity; empty for a statistic";
-  input String requirementVersion "Version of the interpreted requirement";
+  input String requirementVersion "Version identifier of the assessed requirement";
   input Real value "Numerical value; meaningful only when valueAvailable";
   input Boolean valueAvailable "A qualified numerical value is available";
   input Integer dataStatus "DataStatus ordinal, independently of verdict";
@@ -20,14 +20,14 @@ connector MetricInput "Complete, fixed-size qualified-result input"
   input Real samplePeriod "Grid spacing in seconds; zero if not sampled";
   input Integer evidenceKind "EvidenceKind ordinal";
   input String message "Readable qualification and interpretation";
-  input Boolean complete "The observation has closed, including a censored normal stop";
+  input Boolean complete "The producing block has closed observation";
   input Boolean eventCountsAvailable "Event counters are measured by this producer; otherwise they are not applicable";
   input Integer eventCount "Qualified event or request count";
   input Integer matchedCount "One-to-one request-response pairs";
   input Integer timedOutCount "Requests with an observed expired deadline";
   input Integer censoredCount "Requests without sufficient observation";
   input Boolean levelAvailable "A sampled engineering severity level is available";
-  input Integer level "Case-specific severity level, 0, 1 or 2";
+  input Integer level "Engineering severity level, 0, 1 or 2";
   input Real level0Upper "Inclusive absolute-value upper bound for level 0";
   input Real level1Upper "Inclusive absolute-value upper bound for level 1";
   annotation(Icon(coordinateSystem(preserveAspectRatio=true,extent={{-100,-100},{100,100}}),
@@ -38,5 +38,5 @@ connector MetricInput "Complete, fixed-size qualified-result input"
         Line(points={{-70,-17},{-26,-17}}, color={255,255,255}, thickness=2.5, pattern=LinePattern.Solid),
         Line(points={{-70,18},{-26,18}}, color={255,255,255}, thickness=2.5, pattern=LinePattern.Solid),
         Text(extent={{-20,28},{45,-28}}, textString="30", textColor={255,255,255}, fontSize=0)
-      }),Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),Documentation(info="<html><p>Metric input. Inputs retain the physical units or logical meaning stated by their declarations. Domain assertions and explicit availability flags are part of the contract.</p></html>"));
+      }),Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),Documentation(info="<html><p>Receive a complete result from <code>MetricOutput</code>. Keep the value, availability flags, status, verdict and observation metadata connected as one object. <code>dataStatus</code>, <code>verdict</code> and <code>evidenceKind</code> use the ordinals of the corresponding types in <code>Utilities.Types</code>.</p><p>Read <code>value</code> only when <code>valueAvailable</code> is true. Separate flags qualify violation times, event counters and severity levels. <code>complete</code> indicates that collection has closed; it does not imply complete or valid evidence.</p></html>"));
 end MetricInput;

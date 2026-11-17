@@ -1,14 +1,14 @@
 within EvaluationLibrary.Response;
-block MovingAverage "Mean over a complete continuously valid trailing window"
-  parameter String metricId=getInstanceName() "Stable identity of this retained specialist";
-  parameter String requirementId="" "Requirement identity, when configured";
-  parameter String requirementVersion="" "Interpreted requirement version";
-  parameter String unitName="1" "Engineering unit of the reported specialist value";
-  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete specialist result" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
-  Boolean terminalSeen(start=false,fixed=true) "Terminal seen";
-  discrete Boolean qualifiedViolation(start=false,fixed=true) "Qualified violation";
-  discrete Real qualifiedViolationTime(start=0,fixed=true) "Qualified violation time";
-  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Result status";
+block MovingAverage "Compute a continuous mean over a trailing window"
+  parameter String metricId=getInstanceName() "Identifier carried by the result";
+  parameter String requirementId="" "Optional requirement identifier";
+  parameter String requirementVersion="" "Optional requirement version";
+  parameter String unitName="1" "Unit label for the reported value";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Value, qualification and requirement outcome" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
+  Boolean terminalSeen(start=false,fixed=true) "True after normal simulation termination";
+  discrete Boolean qualifiedViolation(start=false,fixed=true) "Latched valid requirement violation";
+  discrete Real qualifiedViolationTime(start=0,fixed=true) "Time of the first valid requirement violation";
+  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Qualification of the reported result";
   parameter Modelica.Units.SI.Time length(min=Modelica.Constants.small) = 1 "Trailing window duration, s";
   parameter Modelica.Units.SI.Time coverageTolerance(min=0) = 1e-7 "Numerical integration tolerance, s";
   Modelica.Blocks.Interfaces.RealInput u "Signal" annotation(Placement(transformation(extent={{-106,18},{-94,30}}), iconTransformation(extent={{-106,18},{-94,30}})));
@@ -20,7 +20,7 @@ protected
   Real integral(start=0,fixed=true) "Integral";
   Real duration(unit="s",start=0,fixed=true) "Duration";
   parameter Modelica.Units.SI.Time startTime(fixed=false) "First observation or stimulus time in seconds";
-  Boolean dataOK "Data ok";
+  Boolean dataOK "True if input validity and numerical checks pass";
 initial equation
   startTime = time;
   assert(length > 0 and coverageTolerance >= 0 and coverageTolerance < length, "Invalid moving window.");
@@ -66,5 +66,5 @@ equation
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),
-    Documentation(info="<html><p>Use delayed integrals to form the mean over the trailing length seconds, default 1 s. coveredDuration is valid time inside that interval; ready requires the full history and current validity. coverageTolerance defaults to 1e-7 s, is nonnegative and must be smaller than length. An invalid gap removes readiness until complete valid trailing coverage is restored. This rolling statistic does not declare a safety threshold.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
+    Documentation(info="<html><p>Computes the mean of <code>u</code> over the preceding <code>length</code> seconds using delayed integrals. <code>coveredDuration</code> reports the valid duration within that trailing interval. The mean has the same unit as the input.</p><p>Connect <code>valid</code> and wait for <code>ready</code>. Readiness requires a complete elapsed window, a valid current input and valid coverage within <code>coverageTolerance</code>. The output is zero while unavailable; an invalid gap prevents readiness until sufficient valid coverage returns.</p></html>"));
 end MovingAverage;

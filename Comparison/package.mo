@@ -1,5 +1,5 @@
 within EvaluationLibrary;
-package Comparison "Comparison"
+package Comparison "Comparison of signals, event times and result sets"
   extends Modelica.Icons.Package;
   annotation(Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={
@@ -8,5 +8,5 @@ package Comparison "Comparison"
         Line(points={{-50.6,-26.68},{-21.16,-0.92},{11.04,15.64},{53.36,9.2}}, color={0,0,127}, thickness=1.1, pattern=LinePattern.Solid),
         Line(points={{11.04,15.64},{11.04,34.04}}, color={128,128,128}, thickness=0.65, pattern=LinePattern.Solid, arrow={Arrow.Filled,Arrow.Filled})
       }));
-  annotation(Documentation(info="<html><p>package supports the single complete-result and explicit qualification contract. See the parameter and field descriptions for its numerical or logical meaning.</p></html>"));
+  annotation(Documentation(info="<html><p>Comparisons of simultaneous channels, sampled trajectories, event arrivals, binary labels and completed results. Use consistent units and observation intervals when comparing numerical results.</p></html>"));
 end Comparison;

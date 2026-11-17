@@ -1,40 +1,40 @@
 within EvaluationLibrary.Statistics;
-block GatedPeak "Sampled severity peak restricted to observed danger"
-  parameter String metricId=getInstanceName() "Stable identity of this retained specialist";
-  parameter String requirementId="" "Requirement identity, when configured";
-  parameter String requirementVersion="" "Interpreted requirement version";
-  parameter String unitName="1" "Engineering unit of the reported specialist value";
-  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete specialist result" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
-  Boolean terminalSeen(start=false,fixed=true) "Terminal seen";
-  discrete Boolean qualifiedViolation(start=false,fixed=true) "Qualified violation";
-  discrete Real qualifiedViolationTime(start=0,fixed=true) "Qualified violation time";
-  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Result status";
-  parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive window start, s";
-  parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive window end, s";
-  parameter Boolean applicable = true "Whether the analysis applies";
+block GatedPeak "Sampled peak severity during a hazard condition"
+  parameter String metricId=getInstanceName() "Metric identifier";
+  parameter String requirementId="" "Optional requirement identifier";
+  parameter String requirementVersion="" "Requirement version";
+  parameter String unitName="1" "Engineering unit of the reported value";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Result record with value, status and observation metadata" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
+  Boolean terminalSeen(start=false,fixed=true) "True after normal simulation termination";
+  discrete Boolean qualifiedViolation(start=false,fixed=true) "Retained valid violation flag";
+  discrete Real qualifiedViolationTime(start=0,fixed=true) "First valid violation time";
+  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Status used in the result record";
+  parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive observation start";
+  parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive observation end";
+  parameter Boolean applicable = true "Whether this evaluation applies";
 
-  parameter Modelica.Units.SI.Time samplePeriod(min=Modelica.Constants.small) = 0.02 "Sampling interval, s";
-  parameter Modelica.Units.SI.Time sampleOffset(min=0) = 0 "First tick offset from windowStart, s";
+  parameter Modelica.Units.SI.Time samplePeriod(min=Modelica.Constants.small) = 0.02 "Sampling interval";
+  parameter Modelica.Units.SI.Time sampleOffset(min=0) = 0 "First sample offset from windowStart";
   parameter Integer minimumSamples(min=1) = 2 "Minimum valid observations";
 
-  Modelica.Blocks.Interfaces.BooleanInput valid "Host-provided input validity" annotation(Placement(transformation(extent={{-106,42},{-94,54}}), iconTransformation(extent={{-106,42},{-94,54}})));
+  Modelica.Blocks.Interfaces.BooleanInput valid "External input-validity condition" annotation(Placement(transformation(extent={{-106,42},{-94,54}}), iconTransformation(extent={{-106,42},{-94,54}})));
 
-  Modelica.Blocks.Interfaces.BooleanOutput inWindow "Current point lies in applicable window" annotation(Placement(transformation(extent={{94,76},{106,88}}), iconTransformation(extent={{94,76},{106,88}})));
-  output EvaluationLibrary.Utilities.Types.DataStatus dataState "Collection and data validity state";
-  Modelica.Blocks.Interfaces.IntegerOutput validSamples "Accepted observations" annotation(Placement(transformation(extent={{94,35},{106,47}}), iconTransformation(extent={{94,35},{106,47}})));
+  Modelica.Blocks.Interfaces.BooleanOutput inWindow "True while the observation window is active" annotation(Placement(transformation(extent={{94,76},{106,88}}), iconTransformation(extent={{94,76},{106,88}})));
+  output EvaluationLibrary.Utilities.Types.DataStatus dataState "Status of the observation data";
+  Modelica.Blocks.Interfaces.IntegerOutput validSamples "Number of valid samples" annotation(Placement(transformation(extent={{94,35},{106,47}}), iconTransformation(extent={{94,35},{106,47}})));
   parameter Real peakLimit = 1 "Inclusive maximum accepted danger severity";
-  Modelica.Blocks.Interfaces.BooleanInput hazard "Hazard" annotation(Placement(transformation(extent={{-106,-6},{-94,6}}), iconTransformation(extent={{-106,-6},{-94,6}})));
-  Modelica.Blocks.Interfaces.RealInput severity "Severity" annotation(Placement(transformation(extent={{-106,-54},{-94,-42}}), iconTransformation(extent={{-106,-54},{-94,-42}})));
-  Modelica.Blocks.Interfaces.IntegerOutput hazardSamples(start=0,fixed=true) "Hazard samples" annotation(Placement(transformation(extent={{94,-6},{106,6}}), iconTransformation(extent={{94,-6},{106,6}})));
-  Modelica.Blocks.Interfaces.RealOutput peak(start=0,fixed=true) "Peak" annotation(Placement(transformation(extent={{94,-47},{106,-35}}), iconTransformation(extent={{94,-47},{106,-35}})));
-  Modelica.Blocks.Interfaces.RealOutput peakTime(unit="s",start=0,fixed=true) "Peak time" annotation(Placement(transformation(extent={{94,-88},{106,-76}}), iconTransformation(extent={{94,-88},{106,-76}})));
-  output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement decision independent of observation completeness";
+  Modelica.Blocks.Interfaces.BooleanInput hazard "Condition enabling severity observations" annotation(Placement(transformation(extent={{-106,-6},{-94,6}}), iconTransformation(extent={{-106,-6},{-94,6}})));
+  Modelica.Blocks.Interfaces.RealInput severity "Observed hazard severity" annotation(Placement(transformation(extent={{-106,-54},{-94,-42}}), iconTransformation(extent={{-106,-54},{-94,-42}})));
+  Modelica.Blocks.Interfaces.IntegerOutput hazardSamples(start=0,fixed=true) "Number of valid hazard samples" annotation(Placement(transformation(extent={{94,-6},{106,6}}), iconTransformation(extent={{94,-6},{106,6}})));
+  Modelica.Blocks.Interfaces.RealOutput peak(start=0,fixed=true) "Greatest sampled hazard severity" annotation(Placement(transformation(extent={{94,-47},{106,-35}}), iconTransformation(extent={{94,-47},{106,-35}})));
+  Modelica.Blocks.Interfaces.RealOutput peakTime(unit="s",start=0,fixed=true) "First occurrence of the greatest sampled severity" annotation(Placement(transformation(extent={{94,-88},{106,-76}}), iconTransformation(extent={{94,-88},{106,-76}})));
+  output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement verdict";
 protected
-  EvaluationLibrary.Utilities.Internal.SampledEvidence evidence(windowStart=windowStart,windowEnd=windowEnd,applicable=applicable,samplePeriod=samplePeriod,sampleOffset=sampleOffset,minimumSamples=minimumSamples) "Evidence";
-  Boolean dataOK "Validity combined with the metric data domain";
+  EvaluationLibrary.Utilities.Internal.SampledEvidence evidence(windowStart=windowStart,windowEnd=windowEnd,applicable=applicable,samplePeriod=samplePeriod,sampleOffset=sampleOffset,minimumSamples=minimumSamples) "Observation coverage and qualification";
+  Boolean dataOK "External validity and numerical-domain checks";
 
-  final parameter Modelica.Units.SI.Time firstSample = windowStart+sampleOffset "First scheduled uniform observation time";
-  Boolean takeTick "Only the scheduled half-open grid is accepted";
+  final parameter Modelica.Units.SI.Time firstSample = windowStart+sampleOffset "First scheduled sampling instant";
+  Boolean takeTick "True at eligible sample instants";
 equation
   when terminal() then terminalSeen=true; end when;
   resultStatus=if verdict==EvaluationLibrary.Utilities.Types.Verdict.INVALID then EvaluationLibrary.Utilities.Types.DataStatus.INVALID
@@ -103,5 +103,5 @@ equation
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}}, preserveAspectRatio=true), graphics={Text(extent={{-96,99},{96,88}}, textColor={73,53,132}, textString="GatedPeak")}),
-    Documentation(info="<html><p>On the uniform grid retain the greatest severity only where hazard is true and the sample is valid. peakLimit defaults to 1 in the severity unit and is inclusive. minimumSamples defaults to 2 for observation coverage. No hazard samples give an undemanded NOT_APPLICABLE verdict; no invented zero peak supplies successful protection.</p><p>The observation defaults to [0,5) s, with a 0.02 s uniform period and zero offset unless declared otherwise. The period is positive, offset is nonnegative and smaller than the period, and minimumSamples must be positive. The exclusive stop is not sampled. Invalid scheduled observations latch INVALID; insufficient or missing scheduled observations give INCOMPLETE. Received samples, valid samples, observed time and valid time are distinct; sampled evidence does not assert strict behavior between ticks.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
+    Documentation(info="<html><p>Tracks the greatest <code>severity</code> at valid sample instants for which <code>hazard=true</code>. <code>peakTime</code> retains the first occurrence of the greatest value. At complete coverage, <code>peak &lt;= peakLimit</code> satisfies the requirement. With no hazard samples, the verdict is <code>NOT_APPLICABLE</code> and the peak is unavailable.</p><p>Connect <code>valid</code> and configure the half-open interval <code>[windowStart, windowEnd)</code>. The first sample is <code>windowStart + sampleOffset</code>; subsequent samples use <code>samplePeriod</code>. Invalid scheduled samples invalidate the result. The result connector carries the sample counts, data status and numerical availability.</p></html>"));
 end GatedPeak;

@@ -1,9 +1,9 @@
 within EvaluationLibrary.Utilities.Internal;
-block ContinuousAccumulator "Integrate first and second moments over qualified time"
+block ContinuousAccumulator "Integrate a signal and its squared value while enabled"
 Modelica.Blocks.Interfaces.RealInput u "Observed real signal in the declared engineering unit" annotation(Placement(transformation(origin={-100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,70},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanInput integrate "Integrate" annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.RealOutput total(start=0,fixed=true) "Total" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.RealOutput squareTotal(start=0,fixed=true) "Square total" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanInput integrate "Enable accumulation" annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.RealOutput total(start=0,fixed=true) "Time integral of the signal" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.RealOutput squareTotal(start=0,fixed=true) "Time integral of the squared signal" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
 equation
   der(total)=if integrate then u else 0;
   der(squareTotal)=if integrate then u*u else 0;
@@ -23,5 +23,5 @@ equation
         Line(points={{44,-20},{66,-20}}, color={0,0,127}, thickness=0.8, pattern=LinePattern.Solid, arrow={Arrow.None,Arrow.Filled}),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
-    Documentation(info="<html><p>Shared continuous first and second integral accumulation. Inputs retain the physical units or logical meaning stated by their declarations. Domain assertions and explicit availability flags are part of the contract.</p></html>"));
+    Documentation(info="<html><p>Integrate <code>u</code> and <code>u*u</code> while <code>integrate</code> is true. Both accumulated values start at zero and are held while disabled. The caller supplies the observation and validity condition; this block performs no validity check or reset.</p></html>"));
 end ContinuousAccumulator;

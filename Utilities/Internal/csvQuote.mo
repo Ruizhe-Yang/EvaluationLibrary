@@ -1,7 +1,7 @@
 within EvaluationLibrary.Utilities.Internal;
-function csvQuote "Csv quote"
-  input String raw "Raw";
-  output String field "Field";
+function csvQuote "Quote and escape an internal CSV field"
+  input String raw "Unescaped field content";
+  output String field "Quoted field with embedded quotes doubled";
 algorithm
   field := "\"" + Modelica.Utilities.Strings.replace(raw,"\"","\"\"") + "\"";
   annotation(
@@ -24,5 +24,5 @@ algorithm
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),
-    Documentation(info="<html><p>Csv quote. Inputs retain the physical units or logical meaning stated by their declarations. Domain assertions and explicit availability flags are part of the contract.</p></html>"));
+    Documentation(info="<html><p>Enclose <code>raw</code> in double quotation marks and double each embedded quotation mark. Commas and line breaks are retained inside the quoted field. This helper is used by internal output routines.</p></html>"));
 end csvQuote;

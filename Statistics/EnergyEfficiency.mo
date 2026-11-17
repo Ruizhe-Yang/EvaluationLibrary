@@ -1,34 +1,34 @@
 within EvaluationLibrary.Statistics;
-block EnergyEfficiency "Useful output energy divided by observed input energy"
-  parameter String metricId=getInstanceName() "Stable identity of this retained specialist";
-  parameter String requirementId="" "Requirement identity, when configured";
-  parameter String requirementVersion="" "Interpreted requirement version";
-  parameter String unitName="1" "Engineering unit of the reported specialist value";
-  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete specialist result" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
-  Boolean terminalSeen(start=false,fixed=true) "Terminal seen";
-  discrete Boolean qualifiedViolation(start=false,fixed=true) "Qualified violation";
-  discrete Real qualifiedViolationTime(start=0,fixed=true) "Qualified violation time";
-  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Result status";
-  parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive window start, s";
-  parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive window end, s";
-  parameter Boolean applicable = true "Whether the analysis applies";
+block EnergyEfficiency "Energy efficiency over an observation interval"
+  parameter String metricId=getInstanceName() "Metric identifier";
+  parameter String requirementId="" "Optional requirement identifier";
+  parameter String requirementVersion="" "Requirement version";
+  parameter String unitName="1" "Engineering unit of the reported value";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Result record with value, status and observation metadata" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
+  Boolean terminalSeen(start=false,fixed=true) "True after normal simulation termination";
+  discrete Boolean qualifiedViolation(start=false,fixed=true) "Retained valid violation flag";
+  discrete Real qualifiedViolationTime(start=0,fixed=true) "First valid violation time";
+  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Status used in the result record";
+  parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive observation start";
+  parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive observation end";
+  parameter Boolean applicable = true "Whether this evaluation applies";
 
-  Modelica.Blocks.Interfaces.BooleanInput valid "Host-provided input validity" annotation(Placement(transformation(extent={{-106,42},{-94,54}}), iconTransformation(extent={{-106,42},{-94,54}})));
+  Modelica.Blocks.Interfaces.BooleanInput valid "External input-validity condition" annotation(Placement(transformation(extent={{-106,42},{-94,54}}), iconTransformation(extent={{-106,42},{-94,54}})));
 
-  Modelica.Blocks.Interfaces.BooleanOutput inWindow "Current point lies in applicable window" annotation(Placement(transformation(extent={{94,76},{106,88}}), iconTransformation(extent={{94,76},{106,88}})));
-  output EvaluationLibrary.Utilities.Types.DataStatus dataState "Collection and data validity state";
+  Modelica.Blocks.Interfaces.BooleanOutput inWindow "True while the observation window is active" annotation(Placement(transformation(extent={{94,76},{106,88}}), iconTransformation(extent={{94,76},{106,88}})));
+  output EvaluationLibrary.Utilities.Types.DataStatus dataState "Status of the observation data";
   Modelica.Blocks.Interfaces.RealOutput observedDuration(unit="s") "Accumulated valid duration" annotation(Placement(transformation(extent={{94,35},{106,47}}), iconTransformation(extent={{94,35},{106,47}})));
   parameter Modelica.Units.SI.Energy minimumInput(min=Modelica.Constants.small) = 1e-3 "Positive minimum observed input energy in joules";
   parameter Real requiredEfficiency(min=0,max=1) = 0.8 "Inclusive minimum useful-energy fraction between zero and one";
   Modelica.Blocks.Interfaces.RealInput inputPower(unit="W") "Input power" annotation(Placement(transformation(extent={{-106,-6},{-94,6}}), iconTransformation(extent={{-106,-6},{-94,6}})));
   Modelica.Blocks.Interfaces.RealInput usefulPower(unit="W") "Useful power" annotation(Placement(transformation(extent={{-106,-54},{-94,-42}}), iconTransformation(extent={{-106,-54},{-94,-42}})));
-  Modelica.Blocks.Interfaces.RealOutput inputEnergy(unit="J",start=0,fixed=true) "Input energy" annotation(Placement(transformation(extent={{94,-6},{106,6}}), iconTransformation(extent={{94,-6},{106,6}})));
-  Modelica.Blocks.Interfaces.RealOutput usefulEnergy(unit="J",start=0,fixed=true) "Useful energy" annotation(Placement(transformation(extent={{94,-47},{106,-35}}), iconTransformation(extent={{94,-47},{106,-35}})));
-  Modelica.Blocks.Interfaces.RealOutput efficiency "Efficiency" annotation(Placement(transformation(extent={{94,-88},{106,-76}}), iconTransformation(extent={{94,-88},{106,-76}})));
-  output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement decision independent of observation completeness";
+  Modelica.Blocks.Interfaces.RealOutput inputEnergy(unit="J",start=0,fixed=true) "Accumulated input energy" annotation(Placement(transformation(extent={{94,-6},{106,6}}), iconTransformation(extent={{94,-6},{106,6}})));
+  Modelica.Blocks.Interfaces.RealOutput usefulEnergy(unit="J",start=0,fixed=true) "Accumulated useful output energy" annotation(Placement(transformation(extent={{94,-47},{106,-35}}), iconTransformation(extent={{94,-47},{106,-35}})));
+  Modelica.Blocks.Interfaces.RealOutput efficiency "Useful-to-input energy ratio; check result.valueAvailable" annotation(Placement(transformation(extent={{94,-88},{106,-76}}), iconTransformation(extent={{94,-88},{106,-76}})));
+  output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement verdict";
 protected
-  EvaluationLibrary.Utilities.Internal.ContinuousEvidence evidence(windowStart=windowStart,windowEnd=windowEnd,applicable=applicable) "Evidence";
-  Boolean dataOK "Validity combined with the metric data domain";
+  EvaluationLibrary.Utilities.Internal.ContinuousEvidence evidence(windowStart=windowStart,windowEnd=windowEnd,applicable=applicable) "Observation coverage and qualification";
+  Boolean dataOK "External validity and numerical-domain checks";
 initial equation
   assert(minimumInput > 0 and requiredEfficiency >= 0 and requiredEfficiency <= 1, "Invalid efficiency limits.");
 equation
@@ -80,5 +80,5 @@ equation
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}}, preserveAspectRatio=true), graphics={Text(extent={{-96,99},{96,88}}, textColor={73,53,132}, textString="EnergyEfficiency")}),
-    Documentation(info="<html><p>Integrate inputPower and usefulPower in watts into inputEnergy and usefulEnergy in joules. minimumInput defaults to 1e-3 J and must be positive. The dimensionless useful/input energy ratio is unavailable below that floor. At complete qualified coverage, efficiency at least requiredEfficiency (default 0.8, inclusive, range zero to one) satisfies the requirement.</p><p>The fixed observation defaults to [0,5) s. valid is host-provided and false validity or a failed numeric-domain check inside the window latches INVALID. Positive valid duration is needed for duration-normalized values. A normal stop before full observation gives an INCOMPLETE complete result; DataStatus and Verdict remain separate.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
+    Documentation(info="<html><p>Integrates non-negative finite <code>inputPower</code> and <code>usefulPower</code> in watts to obtain energies in joules. The useful-to-input energy ratio is available once <code>inputEnergy &gt;= minimumInput</code>. With complete valid coverage, a ratio at least <code>requiredEfficiency</code> satisfies the requirement. The block does not enforce an upper bound on the measured ratio.</p><p>Connect <code>valid</code> and configure the half-open interval <code>[windowStart, windowEnd)</code>. Invalid data within the interval invalidate the result. Normal termination before full coverage is reported as <code>INCOMPLETE</code>. Check the status and availability fields of <code>result</code> when reporting the measurement.</p></html>"));
 end EnergyEfficiency;

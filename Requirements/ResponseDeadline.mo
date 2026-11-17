@@ -1,5 +1,5 @@
 within EvaluationLibrary.Requirements;
-block ResponseDeadline "Evaluate a request/response deadline with FIFO pairing"
+block ResponseDeadline "Check repeated request-response deadlines using FIFO pairing"
 extends EvaluationLibrary.Response.RepeatedResponse(final qualifyDeadline=true);
   annotation(Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={
@@ -20,5 +20,5 @@ extends EvaluationLibrary.Response.RepeatedResponse(final qualifyDeadline=true);
         Text(extent={{51,53},{77,29}}, textString="T", textColor={191,0,0}, fontSize=0),
         Text(extent={{-65,-50},{65,-75}}, textString="FIFO <= T", textColor={64,64,64}, fontSize=0)
       }),
-    Documentation(info="<html><p>Specialize Response.RepeatedResponse by enabling qualifyDeadline. This is meaningful semantic inheritance: it retains the bounded FIFO, explicit initialization, delay history and complete result rather than duplicating their algorithm. Requests are distinct from actual responses, equality is accepted and unavailable closing follow-up is censored.</p></html>"));
+    Documentation(info="<html><p>Uses <code>Response.RepeatedResponse</code> with <code>qualifyDeadline=true</code>. Each response is matched to the oldest outstanding request. Responses at the inclusive deadline are accepted; observed timeouts violate the requirement.</p><p>Connect request and actual response signals, then set <code>deadline</code>, <code>capacity</code> and the observation window. Unfinished follow-up is censored. Without any matched or timed-out request, the deadline assessment remains incomplete. Queue or record overflow invalidates the evidence.</p></html>"));
 end ResponseDeadline;

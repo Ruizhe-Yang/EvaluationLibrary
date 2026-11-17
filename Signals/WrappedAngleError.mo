@@ -1,9 +1,9 @@
 within EvaluationLibrary.Signals;
-block WrappedAngleError "Compute wrapped angular direction error"
-Modelica.Blocks.Interfaces.RealInput angle(unit="rad") "Angle" annotation(Placement(transformation(origin={-100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,70},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.RealInput reference(unit="rad") "Declared reference in the same engineering unit" annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.RealOutput y(unit="rad") "Y" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanOutput available "The numerical output exists in the current data domain" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
+block WrappedAngleError "Signed angular error wrapped to one revolution"
+Modelica.Blocks.Interfaces.RealInput angle(unit="rad") "Observed angle in radians" annotation(Placement(transformation(origin={-100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.RealInput reference(unit="rad") "Reference signal in the same unit" annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.RealOutput y(unit="rad") "Wrapped signed angular error" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanOutput available "True when the numerical value is available" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
 equation
   available=abs(angle)<Modelica.Constants.inf and abs(reference)<Modelica.Constants.inf;
   y=if available then Modelica.Math.atan2(sin(angle-reference),cos(angle-reference)) else 0;
@@ -19,5 +19,5 @@ equation
         Text(extent={{-65,-50},{65,-75}}, textString="wrap(Δφ)", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
-    Documentation(info="<html><p>Return atan2(sin(angle-reference),cos(angle-reference)) in radians. Both angles must be finite; this circular interpretation is suitable for angles and must not be applied to an ordinary position. The branch cut is at plus/minus pi and equivalent full rotations have zero error.</p></html>"));
+    Documentation(info="<html><p>Computes <code>atan2(sin(angle - reference), cos(angle - reference))</code> in radians, with a branch cut at plus or minus pi. Both inputs must be finite. Equivalent full rotations have zero error; unavailable inputs produce <code>available=false</code> and <code>y=0</code>.</p></html>"));
 end WrappedAngleError;

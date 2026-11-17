@@ -1,15 +1,15 @@
 within EvaluationLibrary.Results;
-block TextWriter "Write complete connected results once, without field or metadata mapping"
+block TextWriter "Write connected result records to a text file"
   parameter Integer n(min=1)=1 "Number of complete connected results";
-  parameter String runId="run" "Stable run identity";
-  parameter Boolean required[n]=fill(true,n) "Items required by the overall conjunction";
+  parameter String runId="run" "Run identifier";
+  parameter Boolean required[n]=fill(true,n) "Records included in the overall verdict";
   parameter String outputDirectory="." "Existing output directory";
-  parameter String resultSetId="results" "File-name identity";
+  parameter String resultSetId="results" "Identifier used in the output file name";
   parameter String filePath=outputDirectory+"/"+runId+"_"+resultSetId+".txt" "Destination file; no overwrite by default";
   parameter EvaluationLibrary.Utilities.Types.WritePolicy writePolicy=EvaluationLibrary.Utilities.Types.WritePolicy.RejectExisting "Explicit file replacement policy";
-  EvaluationLibrary.Utilities.Interfaces.MetricInput u[n] "Complete result array" annotation(Placement(transformation(extent={{-110,-10},{-90,10}}),iconTransformation(extent={{-110,-10},{-90,10}})));
+  EvaluationLibrary.Utilities.Interfaces.MetricInput u[n] "Input result records" annotation(Placement(transformation(extent={{-110,-10},{-90,10}}),iconTransformation(extent={{-110,-10},{-90,10}})));
   output Boolean ready "Every result has closed";
-  output Boolean written(start=false,fixed=true) "Output operation completed; never a safety verdict";
+  output Boolean written(start=false,fixed=true) "True after output has been written";
   output Boolean skippedExisting(start=false,fixed=true) "An existing destination was preserved";
   output EvaluationLibrary.Utilities.Types.Verdict overall "Conjunction of required applicable items";
 protected
@@ -67,5 +67,5 @@ algorithm
         Line(points={{-68,6},{-42,6}}, color={0,0,127}, thickness=0.9, pattern=LinePattern.Solid, arrow={Arrow.None,Arrow.Filled}),
         Text(extent={{-65,-50},{65,-75}}, textString="TXT", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
-      }),Diagram(coordinateSystem(preserveAspectRatio=true,extent={{-100,-100},{100,100}}),graphics={Rectangle(extent={{-86,86},{86,-86}},lineColor={95,95,95},fillColor={255,255,255},fillPattern=FillPattern.Solid,lineThickness=0.5),Rectangle(extent={{-50,64},{42,-62}},lineColor={95,95,95},fillColor={255,255,255},fillPattern=FillPattern.Solid,lineThickness=0.5),Line(points={{-34,39},{23,39}},color={0,0,127},thickness=0.8),Line(points={{-34,16},{23,16}},color={95,95,95},thickness=0.8),Line(points={{-34,-7},{23,-7}},color={95,95,95},thickness=0.8),Line(points={{-34,-30},{6,-30}},color={95,95,95},thickness=0.8)}),Documentation(info="<html><p>Optionally export a complete child-preserving terminal summary from n results, default 1, with runId and required flags. The declared filePath destination must have an existing directory. Write only once after collection closure or normal termination. RejectExisting is the default policy; Overwrite must be explicit. Unavailable values are N/A with their reasons. written and skippedExisting describe export only, and file success cannot make an unresolved or violated requirement SATISFIED.</p></html>"));
+      }),Diagram(coordinateSystem(preserveAspectRatio=true,extent={{-100,-100},{100,100}}),graphics={Rectangle(extent={{-86,86},{86,-86}},lineColor={95,95,95},fillColor={255,255,255},fillPattern=FillPattern.Solid,lineThickness=0.5),Rectangle(extent={{-50,64},{42,-62}},lineColor={95,95,95},fillColor={255,255,255},fillPattern=FillPattern.Solid,lineThickness=0.5),Line(points={{-34,39},{23,39}},color={0,0,127},thickness=0.8),Line(points={{-34,16},{23,16}},color={95,95,95},thickness=0.8),Line(points={{-34,-7},{23,-7}},color={95,95,95},thickness=0.8),Line(points={{-34,-30},{6,-30}},color={95,95,95},thickness=0.8)}),Documentation(info="<html><p>Writes a text summary of <code>n</code> connected result records when all collections close or at normal termination. Producer metadata and unavailable-value explanations are retained in input order. <code>required</code> configures the exposed <code>overall</code> verdict.</p><p>The destination directory must already exist. <code>RejectExisting</code> preserves an existing file; select <code>Overwrite</code> explicitly to replace it. <code>written</code> and <code>skippedExisting</code> report file handling separately from the requirement decision.</p></html>"));
 end TextWriter;

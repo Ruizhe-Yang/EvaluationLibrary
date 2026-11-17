@@ -1,32 +1,32 @@
 within EvaluationLibrary.Comparison;
-block MultiRunSummary "Summarize explicitly connected complete and comparable runs"
-  parameter String metricId=getInstanceName() "Stable identity of this retained specialist";
-  parameter String requirementId="" "Requirement identity, when configured";
-  parameter String requirementVersion="" "Interpreted requirement version";
-  parameter String unitName=unit "Engineering unit of the reported specialist value";
-  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete specialist result" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
-  Boolean terminalSeen(start=false,fixed=true) "Terminal seen";
-  discrete Boolean qualifiedViolation(start=false,fixed=true) "Qualified violation";
-  discrete Real qualifiedViolationTime(start=0,fixed=true) "Qualified violation time";
-  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Result status";
-parameter Integer n(min=1)=3 "Number of channels, records or configured items; at least one";
+block MultiRunSummary "Summary of a configured set of comparable result values"
+  parameter String metricId=getInstanceName() "Metric identifier";
+  parameter String requirementId="" "Optional requirement identifier";
+  parameter String requirementVersion="" "Requirement version";
+  parameter String unitName=unit "Engineering unit of the reported value";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Result record with value, status and observation metadata" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
+  Boolean terminalSeen(start=false,fixed=true) "True after normal simulation termination";
+  discrete Boolean qualifiedViolation(start=false,fixed=true) "Retained valid violation flag";
+  discrete Real qualifiedViolationTime(start=0,fixed=true) "First valid violation time";
+  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Status used in the result record";
+parameter Integer n(min=1)=3 "Number of input items";
   parameter String comparisonId="comparison" "Stable identity of the comparison interpretation";
   parameter String comparisonIds[n]=fill(comparisonId,n) "Comparison interpretation identity for each input";
   parameter String unit="1" "Declared common engineering unit";
   parameter String units[n]=fill(unit,n) "Engineering units of the compared inputs";
-  parameter Modelica.Units.SI.Time windowStart=0 "Inclusive observation start in seconds";
-  parameter Modelica.Units.SI.Time windowStop=5 "Exclusive observation stop in seconds";
+  parameter Modelica.Units.SI.Time windowStart=0 "Inclusive observation start";
+  parameter Modelica.Units.SI.Time windowStop=5 "Exclusive observation stop";
   parameter Modelica.Units.SI.Time runStart[n]=fill(windowStart,n) "Inclusive start of each compared run";
   parameter Modelica.Units.SI.Time runStop[n]=fill(windowStop,n) "Exclusive stop of each compared run";
-  EvaluationLibrary.Utilities.Interfaces.MetricInput u[n] "Complete child evidence and producer metadata" annotation(Placement(transformation(origin={-100,0},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,0},extent={{-10,-10},{10,10}})));
-  output Integer nInputs "N inputs";
-  output Integer nValid "N valid";
-  output Boolean available "Available";
-  output Real minimum "Minimum";
-  output Real maximum "Maximum";
-  output Real mean "Mean";
+  EvaluationLibrary.Utilities.Interfaces.MetricInput u[n] "Input result records and producer metadata" annotation(Placement(transformation(origin={-100,0},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,0},extent={{-10,-10},{10,10}})));
+  output Integer nInputs "Number of configured inputs";
+  output Integer nValid "Number of accepted input results";
+  output Boolean available "True when at least one input result is accepted";
+  output Real minimum "Minimum accepted value";
+  output Real maximum "Maximum accepted value";
+  output Real mean "Arithmetic mean of accepted values";
 protected
-  Boolean accepted[n] "Accepted";
+  Boolean accepted[n] "Input acceptance flags";
 initial equation
   assert(n>=1 and comparisonId<>"" and windowStop>windowStart,"Invalid comparison metadata.");
 equation
@@ -84,5 +84,5 @@ equation
         Text(extent={{-65,-50},{65,-75}}, textString="min, mean, max", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
-    Documentation(info="<html><p>For the finite configured n runs, accept only complete available values with the declared comparison identity, engineering unit and matching windows. n defaults to 3 and identity to comparison. Return accepted count, minimum, maximum and arithmetic mean; the complete result reports mean. A subset may have a numeric mean but does not establish complete batch qualification. This finite summary is not a probability distribution or continuous-domain worst-case proof.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
+    Documentation(info="<html><p>Accepts complete, finite, available input values whose declared comparison identifiers, units and intervals match the configured reference. <code>minimum</code>, <code>maximum</code> and <code>mean</code> describe the accepted subset; <code>result.value</code> reports its mean.</p><p>The comparison metadata are supplied through parameters and must describe the connected producers. Inspect <code>nValid</code> alongside <code>nInputs</code>: excluded inputs are omitted from the statistics. The result data status can be <code>COMPLETE</code> when all input collections have closed and at least one input was accepted; this does not mean that every run was accepted.</p></html>"));
 end MultiRunSummary;

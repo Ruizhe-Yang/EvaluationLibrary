@@ -1,20 +1,20 @@
 within EvaluationLibrary.Results;
-block VerdictAggregator "Aggregate required verdicts, preserving witnesses"
-  parameter Integer n(min=1)=1 "Number of channels, records or configured items; at least one";
+block VerdictAggregator "Conjunction of required verdicts with retained result records"
+  parameter Integer n(min=1)=1 "Number of input items";
   parameter Boolean required[n]=fill(true,n) "Which child requirements enter the overall conjunction";
-  parameter String runId="run" "Stable run identity";
-  parameter String resultSetId="aggregate" "Stable output-set identity";
+  parameter String runId="run" "Run identifier";
+  parameter String resultSetId="aggregate" "Result-set identifier";
   parameter Boolean logOnComplete=true "Print one completion audit message";
   EvaluationLibrary.Utilities.Interfaces.MetricInput u[n] 
-    "U" annotation(Placement(transformation(extent={{-110,-10},{-90,10}})));
-  output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement decision independent of observation completeness";
-  output EvaluationLibrary.Utilities.Types.DataStatus dataStatus "Evidence qualification independent of requirement verdict";
-  output Boolean complete "Collection has closed; inspect DataStatus before assuming full evidence";
+    "Input result records" annotation(Placement(transformation(extent={{-110,-10},{-90,10}})));
+  output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement verdict";
+  output EvaluationLibrary.Utilities.Types.DataStatus dataStatus "Status of the observation data";
+  output Boolean complete "True when collection has closed; check data status for completeness";
   output EvaluationLibrary.Utilities.Types.MetricResult children[n] "All children including optional and inapplicable items";
-  output Boolean everViolated "A qualified violation witness exists";
-  output Modelica.Units.SI.Time firstViolationTime "First qualified violation instant; meaningful only when everViolated";
-  output Integer nApplicable "N applicable";
-  output Boolean logged(start=false,fixed=true) "Logged";
+  output Boolean everViolated "True if a valid violation has been observed";
+  output Modelica.Units.SI.Time firstViolationTime "First valid violation time; meaningful when everViolated is true";
+  output Integer nApplicable "Number of applicable required inputs";
+  output Boolean logged(start=false,fixed=true) "True after the completion message has been logged";
 equation
   for i in 1:n loop
     children[i].metricId=u[i].metricId;
@@ -90,5 +90,5 @@ algorithm
         Text(extent={{-65,-50},{65,-75}}, textString="required ∧", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
-    Documentation(info="<html><p>Consume complete child results in declaration order. required defaults to all true; optional and NOT_APPLICABLE children remain inspectable. Explicit qualification makes INVALID dominate VIOLATED, then UNDECIDED; all required applicable items must be SATISFIED to pass. No applicable items give NOT_APPLICABLE. children retains all fields and witnesses, nApplicable counts active requirements, and the earliest required violation is retained. logOnComplete defaults to true and emits one audit event; it does not alter verdicts.</p></html>"));
+    Documentation(info="<html><p>Aggregates the records selected by <code>required</code>. Invalid evidence takes precedence over violation, then unresolved evidence; satisfaction requires all required applicable verdicts to be satisfied. With no applicable required items the verdict is <code>NOT_APPLICABLE</code>.</p><p><code>children</code> retains every input record, including optional items. The earliest required violation time is exposed separately. <code>logOnComplete</code> enables one completion message when required collections close.</p></html>"));
 end VerdictAggregator;

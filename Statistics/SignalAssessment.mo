@@ -1,10 +1,10 @@
 within EvaluationLibrary.Statistics;
-block SignalAssessment "Assess related signals with one observation window and one sample clock"
+block SignalAssessment "Multi-channel bounds assessment with shared sampling"
  parameter Integer n(min=1)=1 "Number of independently interpreted channels";
- parameter String metricId[n]={"signal"+String(i) for i in 1:n} "Stable channel metric IDs";
- parameter String requirementId[n]=metricId "Channel requirement IDs";
- parameter String requirementVersion[n]=fill("1",n) "Interpreted requirement versions";
- parameter String unitName[n]=fill("1",n) "Engineering unit of each interpreted channel";
+ parameter String metricId[n]={"signal"+String(i) for i in 1:n} "Metric identifier for each channel";
+ parameter String requirementId[n]=metricId "Requirement identifier for each channel";
+ parameter String requirementVersion[n]=fill("1",n) "Requirement version for each channel";
+ parameter String unitName[n]=fill("1",n) "Engineering unit for each interpreted channel";
  parameter EvaluationLibrary.Utilities.Types.InputInterpretation interpretation[n]=fill(EvaluationLibrary.Utilities.Types.InputInterpretation.SignedValue,n) "Absolute, signed, difference, or radian wrapped difference";
  parameter EvaluationLibrary.Utilities.Types.AssessmentDirection direction[n]=fill(EvaluationLibrary.Utilities.Types.AssessmentDirection.WithinBand,n) "Inclusive band or one-sided acceptance";
  parameter Real reference[n]=zeros(n) "Per-channel reference in the original engineering unit";
@@ -13,37 +13,37 @@ block SignalAssessment "Assess related signals with one observation window and o
  parameter Modelica.Units.SI.Time windowStart=0 "Inclusive shared start";
  parameter Modelica.Units.SI.Time windowStop=5 "Exclusive shared stop";
  parameter Boolean applicable=true "Whether this assessment applies";
- parameter Boolean useValidInput=false "Expose one shared host validity condition";
+ parameter Boolean useValidInput=false "Enable the shared external validity input";
  parameter Boolean sampled=false "Check bounds only at ticks; false uses continuous event inequalities";
- parameter Modelica.Units.SI.Time samplePeriod(min=Modelica.Constants.small)=0.01 "Shared extrema and optional judgment grid spacing";
+ parameter Modelica.Units.SI.Time samplePeriod(min=Modelica.Constants.small)=0.01 "Shared sampling interval for extrema and optional bounds checks";
  parameter Modelica.Units.SI.Time sampleStart=0 "Shared grid origin";
  parameter Integer minimumSamples(min=1)=1 "Minimum finite observations for each sampled extremum";
  parameter Boolean classifySeverity[n]=fill(false,n) "Report case-specific sampled Level 0, 1 or 2";
  parameter Real level0Upper[n]=fill(0.1,n) "Inclusive absolute-error upper bound for Level 0";
  parameter Real level1Upper[n]=fill(1,n) "Inclusive absolute-error upper bound for Level 1; larger values are Level 2";
- Modelica.Blocks.Interfaces.RealInput u[n] "Observed signals; this block cannot intervene in the host" annotation(Placement(transformation(extent={{-110,-10},{-90,10}}),iconTransformation(extent={{-110,-10},{-90,10}})));
- Modelica.Blocks.Interfaces.BooleanInput valid if useValidInput "Shared host validity" annotation(Placement(transformation(extent={{-10,90},{10,110}}),iconTransformation(extent={{-10,90},{10,110}})));
+ Modelica.Blocks.Interfaces.RealInput u[n] "Observed signal array" annotation(Placement(transformation(extent={{-110,-10},{-90,10}}),iconTransformation(extent={{-110,-10},{-90,10}})));
+ Modelica.Blocks.Interfaces.BooleanInput valid if useValidInput "Shared external validity condition" annotation(Placement(transformation(extent={{-10,90},{10,110}}),iconTransformation(extent={{-10,90},{10,110}})));
  EvaluationLibrary.Utilities.Interfaces.MetricOutput y[n] "One complete independent result per channel" annotation(Placement(transformation(extent={{90,-10},{110,10}}),iconTransformation(extent={{90,-10},{110,10}})));
  output Real evaluated[n] "Interpreted signals before reduction";
  output Real minimum[n](each start=0,each fixed=true) "Sampled minimum; see validSamples";
  output Real maximum[n](each start=0,each fixed=true) "Sampled maximum; see validSamples";
  output Real maximumAbsolute[n](each start=0,each fixed=true) "Sampled maximum absolute interpreted value";
- output Modelica.Units.SI.Time violationDuration[n](each start=0,each fixed=true) "Continuous violation duration; unavailable in sampled judgment mode";
+ output Modelica.Units.SI.Time violationDuration[n](each start=0,each fixed=true) "Violation duration; unavailable when bounds are sampled";
  output Boolean violationDurationAvailable=not sampled "Whether violationDuration has a continuous-time interpretation";
 protected
- Modelica.Blocks.Interfaces.BooleanInput trusted "Trusted";
- EvaluationLibrary.Utilities.Internal.WindowEvidence gate(windowStart=windowStart,windowStop=windowStop,sampled=true,samplePeriod=samplePeriod,sampleStart=sampleStart,applicable=applicable) "Gate";
- Boolean finite[n] "Finite";
- Boolean bad[n] "Bad";
- Boolean failing[n] "Failing";
- Boolean violation[n] "Violation";
- discrete Boolean invalidSeen[n](each start=false,each fixed=true) "Invalid seen";
- discrete Boolean violated[n](each start=false,each fixed=true) "Violated";
- discrete Real firstViolation[n](each start=0,each fixed=true) "First violation";
- discrete Integer samples[n](each start=0,each fixed=true) "Samples";
- Real validTime[n](each start=0,each fixed=true) "Valid time";
- EvaluationLibrary.Utilities.Types.DataStatus status[n] "Status";
- EvaluationLibrary.Utilities.Types.Verdict verdict[n] "Requirement decision independent of observation completeness";
+ Modelica.Blocks.Interfaces.BooleanInput trusted "Internal validity signal";
+ EvaluationLibrary.Utilities.Internal.WindowEvidence gate(windowStart=windowStart,windowStop=windowStop,sampled=true,samplePeriod=samplePeriod,sampleStart=sampleStart,applicable=applicable) "Observation-window qualification";
+ Boolean finite[n] "Finite-value flag for each channel";
+ Boolean bad[n] "Current invalid-data condition for each channel";
+ Boolean failing[n] "Current bounds violation for each channel";
+ Boolean violation[n] "Qualified violation at the selected observation instants";
+ discrete Boolean invalidSeen[n](each start=false,each fixed=true) "Retained invalid-data flag for each channel";
+ discrete Boolean violated[n](each start=false,each fixed=true) "Retained violation flag for each channel";
+ discrete Real firstViolation[n](each start=0,each fixed=true) "First valid violation time for each channel";
+ discrete Integer samples[n](each start=0,each fixed=true) "Valid sample count for each channel";
+ Real validTime[n](each start=0,each fixed=true) "Valid duration for each channel";
+ EvaluationLibrary.Utilities.Types.DataStatus status[n] "Data status for each channel";
+ EvaluationLibrary.Utilities.Types.Verdict verdict[n] "Requirement verdict";
 equation
  connect(valid,trusted);
  if not useValidInput then trusted=true; end if;
@@ -124,5 +124,5 @@ algorithm
         Line(points={{57,-41},{65,-41}}, color={128,128,128}, thickness=0.55, pattern=LinePattern.Solid),
         Text(extent={{-65,-50},{65,-75}}, textString="[n]", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
-      }),Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),Documentation(info="<html><p>Assess related channels without combining unlike units. AbsoluteValue uses abs(u); SignedValue uses u; Difference uses u-reference; WrappedAngleDifference uses atan2(sin(u-reference),cos(u-reference)) in radians. Band bounds are inclusive. A channel may fail independently of other channels.</p><p>The single clock reports sampled minima and maxima; these are never continuous strict extrema. With sampled=false, bound crossings and violation duration are evaluated continuously through Modelica events, between reporting ticks. With sampled=true only tick observations decide bounds and violationDurationAvailable is false. A valid=false interval invalidates the evidence history; a nonfinite channel invalidates that channel. Normal termination before the exclusive stop yields INCOMPLETE, never SATISFIED without coverage. The sample grid is [windowStart,windowStop); minimumSamples also applies.</p><p>Optional Level 0/1/2 classification uses the largest sampled absolute interpreted value: equality belongs to the lower level. Thresholds, raw interpreted values, extrema, numeric availability and verdict remain inspectable. These are case-specific engineering categories, not certification levels. Connect y directly to ConsoleWriter.u.</p></html>"));
+      }),Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),Documentation(info="<html><p>Assesses each channel independently over <code>[windowStart, windowStop)</code>. Select signed value, absolute value, difference from a reference, or wrapped angular difference in radians. Upper, lower and two-sided bounds are inclusive. <code>y</code> contains one result per channel.</p><p>Minima, maxima and maximum absolute values are sampled on the shared grid. With <code>sampled=false</code>, bound violations and their durations use continuous event conditions; with <code>sampled=true</code>, only sample instants decide bounds and <code>violationDurationAvailable=false</code>. Shared invalid input invalidates all channels; a non-finite channel invalidates that channel.</p><p>Optional severity classification uses the sampled maximum absolute interpreted value and inclusive <code>level0Upper</code> and <code>level1Upper</code> thresholds. Inspect coverage and availability before using a level or verdict. Connect <code>y</code> directly to a result writer.</p></html>"));
 end SignalAssessment;

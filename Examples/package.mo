@@ -1,5 +1,5 @@
 within EvaluationLibrary;
-package Examples "Examples"
+package Examples "Runnable examples of evaluation and result reporting"
   extends Modelica.Icons.ExamplesPackage;
-  annotation(Documentation(info="<html><p>package supports the single complete-result and explicit qualification contract. See the parameter and field descriptions for its numerical or logical meaning.</p></html>"));
+  annotation(Documentation(info="<html><p>Self-contained examples covering signal statistics, requirements, event timing, recovery, diagnostic labels, frequency analysis and result reporting. Open a model, use its experiment settings, and inspect the named outputs and console summary. Start with <code>MultiSignalAssessment</code>.</p></html>"));
 end Examples;

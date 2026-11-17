@@ -1,6 +1,6 @@
 within EvaluationLibrary.Examples;
-model RecoveryAndDwell "Require actual band entry and uninterrupted recovery dwell"
- Modelica.Blocks.Sources.BooleanPulse danger(period=10,width=1,startTime=0.1) "Danger" annotation(Placement(transformation(origin={-90,60},extent={{-10,-10},{10,10}})));
+model RecoveryAndDwell "Compare successful and unsuccessful recovery"
+ Modelica.Blocks.Sources.BooleanPulse danger(period=10,width=1,startTime=0.1) "Observed danger condition" annotation(Placement(transformation(origin={-90,60},extent={{-10,-10},{10,10}})));
  Modelica.Blocks.Sources.BooleanConstant noFeedback(k=false) "No feedback" annotation(Placement(transformation(origin={-90,20},extent={{-10,-10},{10,10}})));
  Modelica.Blocks.Sources.Ramp recovering(offset=1,height=-1,duration=1) "Recovering" annotation(Placement(transformation(origin={-90,-20},extent={{-10,-10},{10,10}})));
  Modelica.Blocks.Sources.Constant unrecovered(k=1) "Unrecovered" annotation(Placement(transformation(origin={-90,-60},extent={{-10,-10},{10,10}})));
@@ -9,7 +9,9 @@ model RecoveryAndDwell "Require actual band entry and uninterrupted recovery dwe
 equation
  connect(danger.y,assessment.request[1]) annotation(Line(points={{-80.0, 60.0}, {-50, 60}, {-50, 5}, {-10.0, 5.0}},color={0,0,127}));
  connect(danger.y,assessment.request[2]) annotation(Line(points={{-80.0, 60.0}, {-45, 60}, {-45, 5}, {-10.0, 5.0}},color={0,0,127}));
- connect(noFeedback.y,assessment.response[1]) annotation(Line(points={{-80.0, 20.0}, {-40, 20}, {-40, -5}, {-10.0, -5.0}},color={0,0,127}));
+ connect(noFeedback.y,assessment.response[1]) annotation(Line(origin={0,0},
+points={{-79,20},{-40,20},{-40,-5},{-10,-5}},
+color={0,0,127}),__MWORKS(BlockSystem(NamedSignal)));
  connect(noFeedback.y,assessment.response[2]) annotation(Line(points={{-80.0, 20.0}, {-35, 20}, {-35, -5}, {-10.0, -5.0}},color={0,0,127}));
  connect(recovering.y,assessment.recoverySignal[1]) annotation(Line(points={{-80.0, -20.0}, {-30, -20}, {-30, 0}, {-10.0, 0.0}},color={0,0,127}));
  connect(unrecovered.y,assessment.recoverySignal[2]) annotation(Line(points={{-80.0, -60.0}, {-25, -60}, {-25, 0}, {-10.0, 0.0}},color={0,0,127}));
@@ -23,5 +25,5 @@ equation
         Line(points={{46.72,6.72},{46.72,-20.16}}, color={128,128,128}, thickness=0.5, pattern=LinePattern.Dot),
         Line(points={{46.72,-17.28},{67.84,-17.28}}, color={128,128,128}, thickness=0.65, pattern=LinePattern.Solid, arrow={Arrow.Filled,Arrow.Filled}),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
-      }),Documentation(info="<html><p>Require actual band entry and uninterrupted recovery dwell. All excitation, observation and result reporting are internal. No external input ports or result-field equations are required.</p><p>Danger first occurs at 0.1 s. The decreasing signal enters the inclusive 0.3 band at 0.7 s and completes 0.2 s dwell at 0.9 s, so recovery delay is 0.8 s. The constant second signal never enters the band and violates the recovery task.</p><p>The console lists each metric and its data qualification separately from its verdict. Statistics without a requirement remain UNDECIDED, including when numerical evidence is COMPLETE. See verification/example_verification.md for measured values and the actual compiler scope.</p></html>"));
+      }),Documentation(info="<html><p>Observes a danger event at 0.1 s. The decreasing signal enters the inclusive 0.3 recovery band at 0.7 s and completes its 0.2 s dwell at 0.9 s, giving a recovery delay of 0.8 s. The constant signal never enters the band. Inspect <code>assessment.recovered</code>, <code>assessment.y</code> and the console outcomes.</p></html>"));
 end RecoveryAndDwell;

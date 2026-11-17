@@ -1,5 +1,5 @@
 within EvaluationLibrary.Comparison;
-block PairedDifference "Compare two qualified results with an explicitly matched interpretation"
+block PairedDifference "Signed difference between comparable completed results"
 parameter String comparisonId="comparison" "Stable identity of the comparison interpretation";
   parameter String referenceComparisonId=comparisonId "Declared reference comparison identity";
   parameter String candidateComparisonId=comparisonId "Declared candidate comparison identity";
@@ -9,15 +9,15 @@ parameter String comparisonId="comparison" "Stable identity of the comparison in
   parameter Real candidateStart=referenceStart "Inclusive declared candidate observation start";
   parameter Real referenceStop=5 "Exclusive declared reference observation stop";
   parameter Real candidateStop=referenceStop "Exclusive declared candidate observation stop";
-  parameter Real timeTolerance(min=0)=1e-9 "Nonnegative allowance when matching observation bounds";
+  parameter Real timeTolerance(min=0)=1e-9 "Non-negative allowance when matching observation bounds";
 
-  EvaluationLibrary.Utilities.Interfaces.MetricInput reference "Complete reference result for the paired interpretation" annotation(Placement(transformation(origin={-100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,70},extent={{-10,-10},{10,10}})));
-  EvaluationLibrary.Utilities.Interfaces.MetricInput candidate "Candidate" annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
-  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete directly reportable evidence result" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
-    Modelica.Blocks.Interfaces.RealOutput difference "Difference" annotation(Placement(transformation(origin={100,0},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,0},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanOutput available "The numerical output exists in the current data domain" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
-  output Boolean metadataMatch "Metadata match";
-  output EvaluationLibrary.Utilities.Types.DataStatus dataStatus "Evidence qualification independent of requirement verdict";
+  EvaluationLibrary.Utilities.Interfaces.MetricInput reference "Reference result record" annotation(Placement(transformation(origin={-100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,70},extent={{-10,-10},{10,10}})));
+  EvaluationLibrary.Utilities.Interfaces.MetricInput candidate "Candidate result record" annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Result record with value, status and observation metadata" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
+    Modelica.Blocks.Interfaces.RealOutput difference "Candidate value minus reference value" annotation(Placement(transformation(origin={100,0},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,0},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanOutput available "True when the numerical value is available" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
+  output Boolean metadataMatch "True when the paired metadata agree";
+  output EvaluationLibrary.Utilities.Types.DataStatus dataStatus "Status of the observation data";
 initial equation
   assert(timeTolerance>=0 and referenceStop>referenceStart and candidateStop>candidateStart,"Invalid comparison windows or tolerance.");
 equation
@@ -70,5 +70,5 @@ equation
         Text(extent={{-65,-50},{65,-75}}, textString="cand - ref", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
-    Documentation(info="<html><p>Return candidate.value-reference.value only for complete available paired evidence. Comparison identities, declared units and observation bounds must match; timeTolerance defaults to 1e-9 s and is nonnegative. Mismatches invalidate the comparison. The numeric difference has the common unit and is unavailable while either result lacks evidence; it is not itself a satisfied requirement.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
+    Documentation(info="<html><p>Computes <code>candidate.value - reference.value</code> when both results are complete and available. Comparison identifiers, declared units and declared observation intervals must agree; the connected results must also have matching units and intervals within <code>timeTolerance</code>. A metadata mismatch gives <code>INVALID</code>.</p><p>Set the declared metadata to describe the connected results. The block compares each metadata pair but does not verify every declaration against its producer. The difference retains the common unit and does not itself define a requirement threshold.</p></html>"));
 end PairedDifference;

@@ -1,43 +1,43 @@
 within EvaluationLibrary.Response;
-block OvershootUndershoot "Sampled overshoot and undershoot relative to a declared transition"
-  parameter String metricId=getInstanceName() "Stable identity of this retained specialist";
-  parameter String requirementId="" "Requirement identity, when configured";
-  parameter String requirementVersion="" "Interpreted requirement version";
-  parameter String unitName="%" "Engineering unit of the reported specialist value";
-  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete specialist result" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
-  Boolean terminalSeen(start=false,fixed=true) "Terminal seen";
-  discrete Boolean qualifiedViolation(start=false,fixed=true) "Qualified violation";
-  discrete Real qualifiedViolationTime(start=0,fixed=true) "Qualified violation time";
-  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Result status";
-  parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive window start, s";
-  parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive window end, s";
-  parameter Boolean applicable = true "Whether the analysis applies";
+block OvershootUndershoot "Measure sampled overshoot and undershoot of a transition"
+  parameter String metricId=getInstanceName() "Identifier carried by the result";
+  parameter String requirementId="" "Optional requirement identifier";
+  parameter String requirementVersion="" "Optional requirement version";
+  parameter String unitName="%" "Unit label for the reported value";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Value, qualification and requirement outcome" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
+  Boolean terminalSeen(start=false,fixed=true) "True after normal simulation termination";
+  discrete Boolean qualifiedViolation(start=false,fixed=true) "Latched valid requirement violation";
+  discrete Real qualifiedViolationTime(start=0,fixed=true) "Time of the first valid requirement violation";
+  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Qualification of the reported result";
+  parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive start of the observation window";
+  parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive end of the observation window";
+  parameter Boolean applicable = true "True if this assessment is applicable";
 
   parameter Modelica.Units.SI.Time samplePeriod(min=Modelica.Constants.small) = 0.02 "Sampling interval, s";
   parameter Modelica.Units.SI.Time sampleOffset(min=0) = 0 "First tick offset from windowStart, s";
   parameter Integer minimumSamples(min=1) = 2 "Minimum valid observations";
 
-  Modelica.Blocks.Interfaces.BooleanInput valid "Host-provided input validity" annotation(Placement(transformation(extent={{-106,18},{-94,30}}), iconTransformation(extent={{-106,18},{-94,30}})));
+  Modelica.Blocks.Interfaces.BooleanInput valid "Validity of the observed inputs" annotation(Placement(transformation(extent={{-106,18},{-94,30}}), iconTransformation(extent={{-106,18},{-94,30}})));
 
-  Modelica.Blocks.Interfaces.BooleanOutput inWindow "Current point lies in applicable window" annotation(Placement(transformation(extent={{94,66},{106,78}}), iconTransformation(extent={{94,66},{106,78}})));
-  output EvaluationLibrary.Utilities.Types.DataStatus dataState "Collection and data validity state";
+  Modelica.Blocks.Interfaces.BooleanOutput inWindow "True inside the applicable observation window" annotation(Placement(transformation(extent={{94,66},{106,78}}), iconTransformation(extent={{94,66},{106,78}})));
+  output EvaluationLibrary.Utilities.Types.DataStatus dataState "Observation coverage and data validity";
   Modelica.Blocks.Interfaces.IntegerOutput validSamples "Accepted observations" annotation(Placement(transformation(extent={{94,18},{106,30}}), iconTransformation(extent={{94,18},{106,30}})));
   parameter Real initialValue = 0 "Pre-step baseline";
   parameter Real target = 1 "Final target, different from initialValue";
   Modelica.Blocks.Interfaces.RealInput u "Measured response" annotation(Placement(transformation(extent={{-106,-30},{-94,-18}}), iconTransformation(extent={{-106,-30},{-94,-18}})));
   Modelica.Blocks.Interfaces.RealOutput overshootPercent(unit="%") "Largest excursion past target" annotation(Placement(transformation(extent={{94,-30},{106,-18}}), iconTransformation(extent={{94,-30},{106,-18}})));
   Modelica.Blocks.Interfaces.RealOutput undershootPercent(unit="%") "Largest excursion opposite the step" annotation(Placement(transformation(extent={{94,-78},{106,-66}}), iconTransformation(extent={{94,-78},{106,-66}})));
-  output Modelica.Units.SI.Time overshootAt(start=0,fixed=true) "Overshoot at";
-  output Modelica.Units.SI.Time undershootAt(start=0,fixed=true) "Undershoot at";
+  output Modelica.Units.SI.Time overshootAt(start=0,fixed=true) "Time of the largest sampled overshoot";
+  output Modelica.Units.SI.Time undershootAt(start=0,fixed=true) "Time of the largest sampled undershoot";
 protected
-  EvaluationLibrary.Utilities.Internal.SampledEvidence evidence(windowStart=windowStart,windowEnd=windowEnd,applicable=applicable,samplePeriod=samplePeriod,sampleOffset=sampleOffset,minimumSamples=minimumSamples) "Evidence";
-  Boolean dataOK "Validity combined with the metric data domain";
+  EvaluationLibrary.Utilities.Internal.SampledEvidence evidence(windowStart=windowStart,windowEnd=windowEnd,applicable=applicable,samplePeriod=samplePeriod,sampleOffset=sampleOffset,minimumSamples=minimumSamples) "Observation coverage and data qualification";
+  Boolean dataOK "True if input validity and numerical checks pass";
 
   final parameter Modelica.Units.SI.Time firstSample = windowStart+sampleOffset "First scheduled uniform observation time";
   Boolean takeTick "Only the scheduled half-open grid is accepted";
   discrete Real high(start=1,fixed=true) "High";
   discrete Real low(start=0,fixed=true) "Low";
-  Real normalized "Normalized";
+  Real normalized "Normalised transition progress";
 initial equation
   assert(abs(target-initialValue)>Modelica.Constants.small, "Target and initial value must differ.");
 equation
@@ -97,5 +97,5 @@ equation
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),
-    Documentation(info="<html><p>Normalize sampled response excursions using initialValue and target, default 0 and 1 in the input unit; they must differ. Report finite-grid overshoot and undershoot percentages and their witnesses. The complete result reports overshoot, not a continuous strict maximum. minimumSamples defaults to 2; invalid or insufficient samples cannot establish a qualified response.</p><p>The observation defaults to [0,5) s, with a 0.02 s uniform period and zero offset unless declared otherwise. The period is positive, offset is nonnegative and smaller than the period, and minimumSamples must be positive. The exclusive stop is not sampled. Invalid scheduled observations latch INVALID; insufficient or missing scheduled observations give INCOMPLETE. Received samples, valid samples, observed time and valid time are distinct; sampled evidence does not assert strict behavior between ticks.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
+    Documentation(info="<html><p>Normalises <code>u</code> as <code>(u-initialValue)/(target-initialValue)</code> and tracks extrema on the declared sample grid. <code>overshootPercent</code> measures excursions beyond the target; <code>undershootPercent</code> measures excursions opposite to the transition. Both are non-negative and work for rising or falling transitions.</p><p>Set distinct initial and target values, the observation window and <code>samplePeriod</code>. Connect <code>valid</code>. The result reports sampled overshoot; excursions between samples are not captured. Peak times are meaningful only when the corresponding excursion is positive.</p></html>"));
 end OvershootUndershoot;

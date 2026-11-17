@@ -1,15 +1,15 @@
 within EvaluationLibrary.Results;
-block CSVWriter "Write complete connected results once, without field or metadata mapping"
+block CSVWriter "Write connected result records to a CSV file"
   parameter Integer n(min=1)=1 "Number of complete connected results";
-  parameter String runId="run" "Stable run identity";
-  parameter Boolean required[n]=fill(true,n) "Items required by the overall conjunction";
+  parameter String runId="run" "Run identifier";
+  parameter Boolean required[n]=fill(true,n) "Records included in the overall verdict";
   parameter String outputDirectory="." "Existing output directory";
-  parameter String resultSetId="results" "File-name identity";
+  parameter String resultSetId="results" "Identifier used in the output file name";
   parameter String filePath=outputDirectory+"/"+runId+"_"+resultSetId+".csv" "Destination file; no overwrite by default";
   parameter EvaluationLibrary.Utilities.Types.WritePolicy writePolicy=EvaluationLibrary.Utilities.Types.WritePolicy.RejectExisting "Explicit file replacement policy";
-  EvaluationLibrary.Utilities.Interfaces.MetricInput u[n] "Complete result array" annotation(Placement(transformation(extent={{-110,-10},{-90,10}}),iconTransformation(extent={{-110,-10},{-90,10}})));
+  EvaluationLibrary.Utilities.Interfaces.MetricInput u[n] "Input result records" annotation(Placement(transformation(extent={{-110,-10},{-90,10}}),iconTransformation(extent={{-110,-10},{-90,10}})));
   output Boolean ready "Every result has closed";
-  output Boolean written(start=false,fixed=true) "Output operation completed; never a safety verdict";
+  output Boolean written(start=false,fixed=true) "True after output has been written";
   output Boolean skippedExisting(start=false,fixed=true) "An existing destination was preserved";
   output EvaluationLibrary.Utilities.Types.Verdict overall "Conjunction of required applicable items";
 protected
@@ -68,5 +68,5 @@ algorithm
         Line(points={{-68,6},{-42,6}}, color={0,0,127}, thickness=0.9, pattern=LinePattern.Solid, arrow={Arrow.None,Arrow.Filled}),
         Text(extent={{-65,-50},{65,-75}}, textString="CSV", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
-      }),Diagram(coordinateSystem(preserveAspectRatio=true,extent={{-100,-100},{100,100}}),graphics={Rectangle(extent={{-86,86},{86,-86}},lineColor={95,95,95},fillColor={255,255,255},fillPattern=FillPattern.Solid,lineThickness=0.5),Rectangle(extent={{-53,64},{42,-63}},lineColor={95,95,95},fillColor={255,255,255},fillPattern=FillPattern.Solid,lineThickness=0.5),Line(points={{-53,34},{42,34}},color={95,95,95},thickness=0.8),Line(points={{-53,7},{42,7}},color={95,95,95},thickness=0.8),Line(points={{-53,-20},{42,-20}},color={95,95,95},thickness=0.8),Line(points={{-53,-47},{42,-47}},color={95,95,95},thickness=0.8),Line(points={{-22,34},{-22,-63}},color={95,95,95},thickness=0.8),Line(points={{10,34},{10,-63}},color={95,95,95},thickness=0.8),Text(extent={{-45,60},{35,36}},textString="CSV",textColor={0,0,127},fontSize=14)}),Documentation(info="<html><p>Optionally export the n complete results in declaration order to filePath, default ./run_results.csv, when collection closes or at normal termination. The default name combines outputDirectory, runId and resultSetId. The destination directory must already exist. The 31-column CSV contains runId and all 30 canonical result fields; unavailable values, counters, grades and witnesses use N/A where appropriate. writePolicy defaults to RejectExisting; an existing destination is preserved unless Overwrite is selected explicitly. written and skippedExisting describe file handling, independently of overall safety. MSL file errors can terminate simulation; no portable exception recovery is claimed.</p></html>"));
+      }),Diagram(coordinateSystem(preserveAspectRatio=true,extent={{-100,-100},{100,100}}),graphics={Rectangle(extent={{-86,86},{86,-86}},lineColor={95,95,95},fillColor={255,255,255},fillPattern=FillPattern.Solid,lineThickness=0.5),Rectangle(extent={{-53,64},{42,-63}},lineColor={95,95,95},fillColor={255,255,255},fillPattern=FillPattern.Solid,lineThickness=0.5),Line(points={{-53,34},{42,34}},color={95,95,95},thickness=0.8),Line(points={{-53,7},{42,7}},color={95,95,95},thickness=0.8),Line(points={{-53,-20},{42,-20}},color={95,95,95},thickness=0.8),Line(points={{-53,-47},{42,-47}},color={95,95,95},thickness=0.8),Line(points={{-22,34},{-22,-63}},color={95,95,95},thickness=0.8),Line(points={{10,34},{10,-63}},color={95,95,95},thickness=0.8),Text(extent={{-45,60},{35,36}},textString="CSV",textColor={0,0,127},fontSize=14)}),Documentation(info="<html><p>Writes <code>n</code> connected result records in input order when all collections close or at normal termination. The CSV contains <code>runId</code> and the 30 result fields. Unavailable values are represented as <code>N/A</code>.</p><p>Set <code>filePath</code>, or use the path assembled from <code>outputDirectory</code>, <code>runId</code> and <code>resultSetId</code>. The directory must already exist. <code>RejectExisting</code> preserves an existing file; select <code>Overwrite</code> explicitly to replace it. Inspect <code>written</code> and <code>skippedExisting</code> for the output operation.</p></html>"));
 end CSVWriter;

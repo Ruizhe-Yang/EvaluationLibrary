@@ -1,5 +1,5 @@
 within EvaluationLibrary;
-package UsersGuide "UsersGuide"
+package UsersGuide "User guide"
   extends Modelica.Icons.Package;
   annotation(Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={
@@ -10,5 +10,5 @@ package UsersGuide "UsersGuide"
         Line(points={{15.64,15.64},{46.92,22.08}}, color={75,138,73}, thickness=0.8, pattern=LinePattern.Solid),
         Line(points={{15.64,-1.84},{46.92,4.6}}, color={75,138,73}, thickness=0.8, pattern=LinePattern.Solid)
       }));
-  annotation(Documentation(info="<html><p>package supports the single complete-result and explicit qualification contract. See the parameter and field descriptions for its numerical or logical meaning.</p></html>"));
+  annotation(Documentation(info="<html><p>Start with <a href=\"modelica://EvaluationLibrary.UsersGuide.GettingStarted\">GettingStarted</a> to load the library and run an example. <a href=\"modelica://EvaluationLibrary.UsersGuide.Overview\">Overview</a> describes the available model groups; <a href=\"modelica://EvaluationLibrary.UsersGuide.Conventions\">Conventions</a> and <a href=\"modelica://EvaluationLibrary.UsersGuide.Limitations\">Limitations</a> explain result interpretation.</p><p>The English manual is provided in <code>docs/UserGuide.md</code>, with a Chinese edition in <code>docs/UserGuide.zh-CN.md</code>.</p></html>"));
 end UsersGuide;

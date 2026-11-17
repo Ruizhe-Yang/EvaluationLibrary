@@ -1,34 +1,34 @@
 within EvaluationLibrary.Statistics;
-block ZeroCrossingOscillation "Qualified zero crossings and estimated oscillation period"
-  parameter String metricId=getInstanceName() "Stable identity of this retained specialist";
-  parameter String requirementId="" "Requirement identity, when configured";
-  parameter String requirementVersion="" "Interpreted requirement version";
-  parameter String unitName="s" "Engineering unit of the reported specialist value";
-  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete specialist result" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
-  Boolean terminalSeen(start=false,fixed=true) "Terminal seen";
-  discrete Boolean qualifiedViolation(start=false,fixed=true) "Qualified violation";
-  discrete Real qualifiedViolationTime(start=0,fixed=true) "Qualified violation time";
-  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Result status";
-  parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive window start, s";
-  parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive window end, s";
-  parameter Boolean applicable = true "Whether the analysis applies";
+block ZeroCrossingOscillation "Mean period between observed upward level crossings"
+  parameter String metricId=getInstanceName() "Metric identifier";
+  parameter String requirementId="" "Optional requirement identifier";
+  parameter String requirementVersion="" "Requirement version";
+  parameter String unitName="s" "Engineering unit of the reported value";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Result record with value, status and observation metadata" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
+  Boolean terminalSeen(start=false,fixed=true) "True after normal simulation termination";
+  discrete Boolean qualifiedViolation(start=false,fixed=true) "Retained valid violation flag";
+  discrete Real qualifiedViolationTime(start=0,fixed=true) "First valid violation time";
+  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Status used in the result record";
+  parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive observation start";
+  parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive observation end";
+  parameter Boolean applicable = true "Whether this evaluation applies";
 
-  Modelica.Blocks.Interfaces.BooleanInput valid "Host-provided input validity" annotation(Placement(transformation(extent={{-106,18},{-94,30}}), iconTransformation(extent={{-106,18},{-94,30}})));
+  Modelica.Blocks.Interfaces.BooleanInput valid "External input-validity condition" annotation(Placement(transformation(extent={{-106,18},{-94,30}}), iconTransformation(extent={{-106,18},{-94,30}})));
 
-  Modelica.Blocks.Interfaces.BooleanOutput inWindow "Current point lies in applicable window" annotation(Placement(transformation(extent={{94,76},{106,88}}), iconTransformation(extent={{94,76},{106,88}})));
-  output EvaluationLibrary.Utilities.Types.DataStatus dataState "Collection and data validity state";
+  Modelica.Blocks.Interfaces.BooleanOutput inWindow "True while the observation window is active" annotation(Placement(transformation(extent={{94,76},{106,88}}), iconTransformation(extent={{94,76},{106,88}})));
+  output EvaluationLibrary.Utilities.Types.DataStatus dataState "Status of the observation data";
   Modelica.Blocks.Interfaces.RealOutput observedDuration(unit="s") "Accumulated valid duration" annotation(Placement(transformation(extent={{94,35},{106,47}}), iconTransformation(extent={{94,35},{106,47}})));
   parameter Real level = 0 "Reference level in the signal unit";
   Modelica.Blocks.Interfaces.RealInput u "Observed waveform" annotation(Placement(transformation(extent={{-106,-30},{-94,-18}}), iconTransformation(extent={{-106,-30},{-94,-18}})));
-  Modelica.Blocks.Interfaces.IntegerOutput crossings(start=0,fixed=true) "Observed upward crossings" annotation(Placement(transformation(extent={{94,-6},{106,6}}), iconTransformation(extent={{94,-6},{106,6}})));
+  Modelica.Blocks.Interfaces.IntegerOutput crossings(start=0,fixed=true) "Number of observed upward crossings" annotation(Placement(transformation(extent={{94,-6},{106,6}}), iconTransformation(extent={{94,-6},{106,6}})));
   Modelica.Blocks.Interfaces.RealOutput meanPeriod(unit="s") "First-to-last span divided by complete cycles" annotation(Placement(transformation(extent={{94,-47},{106,-35}}), iconTransformation(extent={{94,-47},{106,-35}})));
   Modelica.Blocks.Interfaces.BooleanOutput defined "At least one complete observed cycle" annotation(Placement(transformation(extent={{94,-88},{106,-76}}), iconTransformation(extent={{94,-88},{106,-76}})));
-  output Modelica.Units.SI.Time firstCrossing(start=0,fixed=true) "First crossing";
-  output Modelica.Units.SI.Time lastCrossing(start=0,fixed=true) "Last crossing";
+  output Modelica.Units.SI.Time firstCrossing(start=0,fixed=true) "First observed upward crossing time";
+  output Modelica.Units.SI.Time lastCrossing(start=0,fixed=true) "Most recent observed upward crossing time";
 protected
-  EvaluationLibrary.Utilities.Internal.ContinuousEvidence evidence(windowStart=windowStart,windowEnd=windowEnd,applicable=applicable) "Evidence";
-  Boolean dataOK "Validity combined with the metric data domain";
-  Boolean high "High";
+  EvaluationLibrary.Utilities.Internal.ContinuousEvidence evidence(windowStart=windowStart,windowEnd=windowEnd,applicable=applicable) "Observation coverage and qualification";
+  Boolean dataOK "External validity and numerical-domain checks";
+  Boolean high "True when the input is above the crossing level";
 equation
   when terminal() then terminalSeen=true; end when;
   resultStatus=if (dataState)==EvaluationLibrary.Utilities.Types.DataStatus.PENDING and terminalSeen then EvaluationLibrary.Utilities.Types.DataStatus.INCOMPLETE else (dataState);
@@ -86,5 +86,5 @@ equation
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),
-    Documentation(info="<html><p>Observe rising crossings of u above level, whose default is zero in the input unit. Initial truth is not counted as a crossing. At least two accepted crossings are required; meanPeriod is the first-to-last span divided by crossings minus one, in seconds. Nonperiodic signals still yield only this finite observed estimate.</p><p>The fixed observation defaults to [0,5) s. valid is host-provided and false validity or a failed numeric-domain check inside the window latches INVALID. Positive valid duration is needed for duration-normalized values. A normal stop before full observation gives an INCOMPLETE complete result; DataStatus and Verdict remain separate.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
+    Documentation(info="<html><p>Counts upward crossings of <code>u &gt; level</code>; an initially true condition is not counted. With at least two accepted crossings, <code>meanPeriod</code> is the first-to-last crossing interval divided by <code>crossings - 1</code>. <code>result.value</code> reports this finite-record period estimate in seconds.</p><p>Connect <code>valid</code> and configure the half-open interval <code>[windowStart, windowEnd)</code>. Invalid data within the interval invalidate the result. Normal termination before full coverage is reported as <code>INCOMPLETE</code>. Check the status and availability fields of <code>result</code> when reporting the measurement.</p></html>"));
 end ZeroCrossingOscillation;

@@ -1,5 +1,5 @@
 within EvaluationLibrary.Examples;
-model FrequencyOrFileOutput "Measure a finite-window tone and optionally export complete results"
+model FrequencyOrFileOutput "Estimate a sinusoidal amplitude and write its result"
  Modelica.Blocks.Sources.Sine sine(amplitude=2,f=2) "Sine" annotation(Placement(transformation(origin={-80,0},extent={{-10,-10},{10,10}})));
  EvaluationLibrary.Frequency.SingleFrequency tone(frequency=2,nSamples=100,samplePeriod=0.01,windowStop=1,metricId="tone_amplitude",unitName="V") "Tone" annotation(Placement(transformation(origin={0,0},extent={{-10,-10},{10,10}})));
  EvaluationLibrary.Results.ConsoleWriter report(runId="frequency") "Report" annotation(Placement(transformation(origin={80,40},extent={{-10,-10},{10,10}})));
@@ -17,5 +17,5 @@ equation
         Line(points={{41.92,-19.2},{41.92,-5.76}}, color={0,0,127}, thickness=1.1, pattern=LinePattern.Solid),
         Line(points={{58.72,-19.2},{58.72,-12.48}}, color={0,0,127}, thickness=1.1, pattern=LinePattern.Solid),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
-      }),Documentation(info="<html><p>Measure a finite-window tone and optionally export complete results. All excitation, observation and result reporting are internal. No external input ports or result-field equations are required.</p><p>A coherent rectangular 100-point window at 0.01 s resolves the 2 Hz tone with amplitude 2 V. This is a finite DFT estimate, not an infinite-duration spectrum. Console output and optional CSV consume the same complete result. An existing frequency_tone.csv is preserved by default; export success never changes UNDECIDED into SATISFIED.</p><p>The console lists each metric and its data qualification separately from its verdict. Statistics without a requirement remain UNDECIDED, including when numerical evidence is COMPLETE. See verification/example_verification.md for measured values and the actual compiler scope.</p></html>"));
+      }),Documentation(info="<html><p>Uses 100 samples at 0.01 s intervals to estimate the amplitude of a 2 Hz, 2 V sine wave. Inspect <code>tone.result</code> and the console report. The CSV writer receives the same result; file export is controlled by its parameters and preserves an existing output file under the default write policy.</p></html>"));
 end FrequencyOrFileOutput;

@@ -1,7 +1,7 @@
 within EvaluationLibrary.Utilities.Functions;
-function VerdictFromCode "Decode the fixed verdict ordinal"
+function VerdictFromCode "Convert an integer code to a verdict"
   extends Modelica.Icons.Function;
-input Integer code "Code";
+input Integer code "Verdict enumeration ordinal";
   output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement decision independent of observation completeness";
 algorithm
   verdict:=if code==1 then EvaluationLibrary.Utilities.Types.Verdict.UNDECIDED elseif code==2 then EvaluationLibrary.Utilities.Types.Verdict.SATISFIED elseif code==3 then EvaluationLibrary.Utilities.Types.Verdict.VIOLATED
@@ -15,5 +15,5 @@ algorithm
         Polygon(points={{18.722,-0.639},{36.593,18.934},{54.464,-0.639},{36.593,-20.212},{18.722,-0.639}}, lineColor={64,64,64}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5),
         Text(extent={{25.53,10.424},{47.656,-11.702}}, textString="V", textColor={64,64,64}, fontSize=0)
       }),
-    Documentation(info="<html><p>Verdict from code. Inputs retain the physical units or logical meaning stated by their declarations. Domain assertions and explicit availability flags are part of the contract.</p></html>"));
+    Documentation(info="<html><p>Decode the ordinals of <code>Types.Verdict</code>: 1 is <code>UNDECIDED</code>, 2 <code>SATISFIED</code>, 3 <code>VIOLATED</code>, 4 <code>INVALID</code> and 5 <code>NOT_APPLICABLE</code>. Any unrecognised code also returns <code>INVALID</code>.</p></html>"));
 end VerdictFromCode;

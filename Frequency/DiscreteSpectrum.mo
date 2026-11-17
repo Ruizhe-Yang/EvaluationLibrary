@@ -1,48 +1,48 @@
 within EvaluationLibrary.Frequency;
-block DiscreteSpectrum "Compute a single-sided finite DFT once when the sample window is filled"
-  parameter String metricId=getInstanceName() "Stable metric identity";
-  parameter String requirementId="" "Requirement identity; empty for a statistic";
-  parameter String requirementVersion="" "Interpreted requirement version";
+block DiscreteSpectrum "Single-sided discrete Fourier amplitude spectrum"
+  parameter String metricId=getInstanceName() "Metric identifier";
+  parameter String requirementId="" "Optional requirement identifier";
+  parameter String requirementVersion="" "Requirement version";
   parameter String unitName="1" "Engineering unit of the reported value";
-parameter EvaluationLibrary.Utilities.Types.WindowMode windowMode=EvaluationLibrary.Utilities.Types.WindowMode.FixedTime "Fixed-time or first externally gated observation window";
-  parameter Modelica.Units.SI.Time windowStart=0 "Inclusive observation start in seconds";
-  parameter Modelica.Units.SI.Time windowStop=5 "Exclusive observation stop in seconds";
+parameter EvaluationLibrary.Utilities.Types.WindowMode windowMode=EvaluationLibrary.Utilities.Types.WindowMode.FixedTime "Fixed interval or first contiguous external window";
+  parameter Modelica.Units.SI.Time windowStart=0 "Inclusive observation start";
+  parameter Modelica.Units.SI.Time windowStop=5 "Exclusive observation stop";
   parameter Boolean applicable=true "Whether this evaluation applies";
-  parameter Boolean useValidInput=false "Expose the host-provided validity connector";
+  parameter Boolean useValidInput=false "Enable the external validity input";
 
-  parameter Modelica.Units.SI.Time samplePeriod(min=0)=0.01 "Positive uniform sampling interval in seconds";
-  parameter Modelica.Units.SI.Time sampleStart=0 "Uniform sample grid origin in seconds";
-  Modelica.Blocks.Interfaces.BooleanInput valid if useValidInput "Host declares the observed inputs valid" annotation(Placement(transformation(origin={0,100},extent={{-10,-10},{10,10}}),iconTransformation(origin={0,100},extent={{-10,-10},{10,10}})));
+  parameter Modelica.Units.SI.Time samplePeriod(min=0)=0.01 "Uniform sampling interval; must be positive";
+  parameter Modelica.Units.SI.Time sampleStart=0 "Origin of the uniform sampling grid";
+  Modelica.Blocks.Interfaces.BooleanInput valid if useValidInput "External input-validity condition" annotation(Placement(transformation(origin={0,100},extent={{-10,-10},{10,10}}),iconTransformation(origin={0,100},extent={{-10,-10},{10,10}})));
   Modelica.Blocks.Interfaces.BooleanInput window if windowMode==EvaluationLibrary.Utilities.Types.WindowMode.ExternalSingle "External observation gate; only the first contiguous interval is accepted" annotation(Placement(transformation(origin={-100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,70},extent={{-10,-10},{10,10}})));
-  output EvaluationLibrary.Utilities.Types.DataStatus dataStatus "Evidence qualification independent of requirement verdict";
-  output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement decision independent of observation completeness";
-  output Boolean complete "Collection has closed; inspect DataStatus before assuming full evidence";
-  output Boolean everViolated "A qualified violation witness exists";
-  output Modelica.Units.SI.Time firstViolationTime "First qualified violation instant; meaningful only when everViolated";
-  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete directly reportable evidence result" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
+  output EvaluationLibrary.Utilities.Types.DataStatus dataStatus "Status of the observation data";
+  output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement verdict";
+  output Boolean complete "True when collection has closed; check data status for completeness";
+  output Boolean everViolated "True if a valid violation has been observed";
+  output Modelica.Units.SI.Time firstViolationTime "First valid violation time; meaningful when everViolated is true";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Result record with value, status and observation metadata" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
   parameter Integer nSamples(min=16,max=1024)=200 "Number of uniformly spaced observations in the finite record";
-  parameter EvaluationLibrary.Utilities.Types.Taper taper=EvaluationLibrary.Utilities.Types.Taper.Rectangular "Finite spectral taper; rectangular or Hann";
+  parameter EvaluationLibrary.Utilities.Types.Taper taper=EvaluationLibrary.Utilities.Types.Taper.Rectangular "Rectangular or Hann taper";
   parameter Boolean removeMean=false "Subtract the sample mean before spectral projection";
-    Modelica.Blocks.Interfaces.RealInput u "Observed real signal in the declared engineering unit" annotation(Placement(transformation(origin={-100,23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,23.33333},extent={{-10,-10},{10,10}})));
-  output Modelica.Units.SI.Frequency frequencyResolution "Frequency resolution";
-  output Modelica.Units.SI.Frequency nyquist "Nyquist";
+    Modelica.Blocks.Interfaces.RealInput u "Observed signal" annotation(Placement(transformation(origin={-100,23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,23.33333},extent={{-10,-10},{10,10}})));
+  output Modelica.Units.SI.Frequency frequencyResolution "Frequency-bin spacing";
+  output Modelica.Units.SI.Frequency nyquist "Nyquist frequency";
 
   final parameter Integer nBins=div(nSamples,2)+1 "Number of finite Fourier bins";
   output Modelica.Units.SI.Frequency frequency[nBins] "Selected frequency in hertz, not above Nyquist";
-  output Real amplitude[nBins](each start=0,each fixed=true) "Amplitude";
-  Modelica.Blocks.Interfaces.RealOutput value "Numerical metric; meaningful only when available" annotation(Placement(transformation(origin={100,0},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,0},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanOutput available "The numerical output exists in the current data domain" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
+  output Real amplitude[nBins](each start=0,each fixed=true) "Fourier amplitude";
+  Modelica.Blocks.Interfaces.RealOutput value "Numerical value; check result.valueAvailable" annotation(Placement(transformation(origin={100,0},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,0},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanOutput available "True when the numerical value is available" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
 protected
-  Modelica.Blocks.Interfaces.BooleanInput trusted "Trusted" annotation(Placement(transformation(origin={-100,-23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-23.33333},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanInput externalWindow "External window" annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanInput trusted "Internal validity signal" annotation(Placement(transformation(origin={-100,-23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-23.33333},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanInput externalWindow "Internal external-window signal" annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
   EvaluationLibrary.Utilities.Internal.WindowEvidence gate(windowMode=windowMode,windowStart=windowStart,windowStop=windowStop,
-    sampled=true,samplePeriod=samplePeriod,sampleStart=sampleStart,applicable=applicable) "Gate";
-  Boolean dataOK "Data ok";
-  Boolean violationNow "Violation now";
-  EvaluationLibrary.Utilities.Internal.SpectrumBuffer cache(n=nSamples) "Cache";
-  discrete Real re(start=0,fixed=true) "Re";
-  discrete Real im(start=0,fixed=true) "Im";
-  discrete Real phase(start=0,fixed=true) "Phase";
+    sampled=true,samplePeriod=samplePeriod,sampleStart=sampleStart,applicable=applicable) "Observation-window qualification";
+  Boolean dataOK "Combined input validity";
+  Boolean violationNow "Current valid violation condition";
+  EvaluationLibrary.Utilities.Internal.SpectrumBuffer cache(n=nSamples) "Finite sample buffer";
+  discrete Real re(start=0,fixed=true) "Real Fourier coefficient";
+  discrete Real im(start=0,fixed=true) "Imaginary Fourier coefficient";
+  discrete Real phase(start=0,fixed=true) "Fourier phase";
 initial equation
   assert(nSamples>=16 and nSamples<=1024,"Invalid spectral sample count.");
 
@@ -128,5 +128,5 @@ algorithm
         Text(extent={{-65,-50},{65,-75}}, textString="DFT", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
-    Documentation(info="<html><p>Calculate the finite single-sided DFT of nSamples ordered observations; the complete result reports its selected finite peak. nSamples defaults to 200 and lies between 16 and 1024. samplePeriod defaults to 0.01 s; taper defaults to rectangular and removeMean to false. DC and Nyquist use their proper one-sided scaling. Frequency resolution is set by record duration; no continuous-domain spectral maximum is claimed.</p><p>The default fixed observation is [0,5) s. ExternalSingle instead observes only the first contiguous external gate; a later gate invalidates the history. useValidInput defaults to false; when enabled, false validity or nonfinite in-window data latch INVALID. Early normal termination or missing coverage is INCOMPLETE. DataStatus qualifies evidence independently of Verdict. Numeric availability and violation witnesses must be inspected separately. Stable identity, unitName and optional requirement metadata originate here and travel directly with result to a writer.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
+    Documentation(info="<html><p>Calculates <code>div(nSamples, 2) + 1</code> frequency bins once the record is filled. Bin spacing is <code>1/(nSamples*samplePeriod)</code>. DC and the Nyquist bin, when present, use one-sided scaling. <code>result.value</code> reports the largest bin amplitude.</p><p>Choose the observation interval and sample grid to provide exactly <code>nSamples</code> valid samples. Fewer samples give incomplete evidence; extra samples overflow the buffer. For <code>sampleStart=windowStart=0</code>, <code>samplePeriod=0.01</code> and <code>nSamples=200</code>, set <code>windowStop=2</code>. The result is available after the interval closes. Tapering and record length affect spectral leakage.</p></html>"));
 end DiscreteSpectrum;

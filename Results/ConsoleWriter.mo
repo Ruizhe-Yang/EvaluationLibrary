@@ -1,11 +1,11 @@
 within EvaluationLibrary.Results;
-block ConsoleWriter "Write complete connected results once, without field or metadata mapping"
+block ConsoleWriter "Print one summary of connected result records"
   parameter Integer n(min=1)=1 "Number of complete connected results";
-  parameter String runId="run" "Stable run identity";
-  parameter Boolean required[n]=fill(true,n) "Items required by the overall conjunction";
-  EvaluationLibrary.Utilities.Interfaces.MetricInput u[n] "Complete result array" annotation(Placement(transformation(extent={{-110,-10},{-90,10}}),iconTransformation(extent={{-110,-10},{-90,10}})));
+  parameter String runId="run" "Run identifier";
+  parameter Boolean required[n]=fill(true,n) "Records included in the overall verdict";
+  EvaluationLibrary.Utilities.Interfaces.MetricInput u[n] "Input result records" annotation(Placement(transformation(extent={{-110,-10},{-90,10}}),iconTransformation(extent={{-110,-10},{-90,10}})));
   output Boolean ready "Every result has closed";
-  output Boolean written(start=false,fixed=true) "Output operation completed; never a safety verdict";
+  output Boolean written(start=false,fixed=true) "True after output has been written";
   output Boolean skippedExisting(start=false,fixed=true) "An existing destination was preserved";
   output EvaluationLibrary.Utilities.Types.Verdict overall "Conjunction of required applicable items";
 protected
@@ -64,5 +64,5 @@ algorithm
         Line(points={{-15,-32},{-15,-43},{15,-43},{15,-32}}, color={128,128,128}, thickness=0.6, pattern=LinePattern.Solid),
         Text(extent={{-65,-50},{65,-75}}, textString="console", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
-      }),Diagram(coordinateSystem(preserveAspectRatio=true,extent={{-100,-100},{100,100}}),graphics={Rectangle(extent={{-86,86},{86,-86}},lineColor={95,95,95},fillColor={255,255,255},fillPattern=FillPattern.Solid,lineThickness=0.5),Rectangle(extent={{-66,50},{66,-48}},lineColor={95,95,95},fillColor={248,248,248},fillPattern=FillPattern.Solid,lineThickness=0.5),Rectangle(extent={{-66,50},{66,30}},lineColor={95,95,95},fillColor={230,234,240},fillPattern=FillPattern.Solid,lineThickness=0.5),Line(points={{-47,15},{-35,4},{-47,-7}},color={0,0,127},thickness=0.8),Line(points={{-25,-10},{4,-10}},color={0,0,127},thickness=1.4),Line(points={{-47,-29},{43,-29}},color={95,95,95},thickness=0.8)}),Documentation(info="<html><p>Connect the n complete result inputs directly; n defaults to 1 and required to all true. runId labels the single report. Producer identities, units, windows and explanations are read from u, not repeated writer parameters. Print each child in declaration order, unavailable values as N/A and any violation witness. Print once when collection closes or at normal termination, never once per solver step. Explicit qualified aggregation distinguishes invalid, violated, unresolved, satisfied and inapplicable evidence. written records output activity only and cannot change a safety decision. File output is not required.</p></html>"));
+      }),Diagram(coordinateSystem(preserveAspectRatio=true,extent={{-100,-100},{100,100}}),graphics={Rectangle(extent={{-86,86},{86,-86}},lineColor={95,95,95},fillColor={255,255,255},fillPattern=FillPattern.Solid,lineThickness=0.5),Rectangle(extent={{-66,50},{66,-48}},lineColor={95,95,95},fillColor={248,248,248},fillPattern=FillPattern.Solid,lineThickness=0.5),Rectangle(extent={{-66,50},{66,30}},lineColor={95,95,95},fillColor={230,234,240},fillPattern=FillPattern.Solid,lineThickness=0.5),Line(points={{-47,15},{-35,4},{-47,-7}},color={0,0,127},thickness=0.8),Line(points={{-25,-10},{4,-10}},color={0,0,127},thickness=1.4),Line(points={{-47,-29},{43,-29}},color={95,95,95},thickness=0.8)}),Documentation(info="<html><p>Connect <code>n</code> result records to <code>u</code>. The summary reads identities, units, observation coverage and explanations from each producer and prints records in input order. Unavailable values are shown as <code>N/A</code>. <code>required</code> selects the records included in the overall verdict.</p><p>Prints once when every input collection has closed or at normal termination. <code>written</code> records output completion. Result qualification and verdicts are preserved; no output file is required.</p></html>"));
 end ConsoleWriter;

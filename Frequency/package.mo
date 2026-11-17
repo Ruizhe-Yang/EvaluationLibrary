@@ -1,5 +1,5 @@
 within EvaluationLibrary;
-package Frequency "Frequency"
+package Frequency "Finite-record frequency and oscillation analysis"
   extends Modelica.Icons.Package;
   annotation(Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={
@@ -15,5 +15,5 @@ package Frequency "Frequency"
         Line(points={{54.28,-36.8},{54.28,-6.44}}, color={0,0,127}, thickness=1.1, pattern=LinePattern.Solid),
         Ellipse(extent={{51.704,-9.016},{56.856,-3.864}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5)
       }));
-  annotation(Documentation(info="<html><p>package supports the single complete-result and explicit qualification contract. See the parameter and field descriptions for its numerical or logical meaning.</p></html>"));
+  annotation(Documentation(info="<html><p>Finite-record Fourier amplitudes, harmonic distortion, input-output gain and phase, and sampled peak decay. Configure the sampling interval, record length and observation interval consistently.</p><p>The spectral blocks analyse a finite sampled record. Their resolution and leakage depend on that record and the selected window.</p></html>"));
 end Frequency;

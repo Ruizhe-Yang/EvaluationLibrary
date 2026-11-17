@@ -1,9 +1,9 @@
 within EvaluationLibrary.Utilities.Functions;
-function ToVerdict "Decide requirement evidence without discarding a recorded witness"
+function ToVerdict "Derive a verdict from data status and a violation flag"
   extends Modelica.Icons.Function;
-input EvaluationLibrary.Utilities.Types.DataStatus status "Status";
+input EvaluationLibrary.Utilities.Types.DataStatus status "Data qualification supplied by the producing block";
   input Boolean everViolated "A qualified violation witness exists";
-  input Boolean isRequirement=true "Is requirement";
+  input Boolean isRequirement=true "True when complete evidence may establish requirement satisfaction";
   output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement decision independent of observation completeness";
 algorithm
   verdict:=if status==EvaluationLibrary.Utilities.Types.DataStatus.NOT_APPLICABLE then EvaluationLibrary.Utilities.Types.Verdict.NOT_APPLICABLE
@@ -25,5 +25,5 @@ algorithm
         Text(extent={{18.722,3.616},{40.848,-18.51}}, textString="V", textColor={64,64,64}, fontSize=0),
         Text(extent={{-53.613,-59.358},{53.613,-78.08}}, textString="witness", textColor={64,64,64}, fontSize=0)
       }),
-    Documentation(info="<html><p>Map evidence qualification and a recorded requirement violation into a verdict: not applicable and invalid statuses retain their meaning, an observed violation remains VIOLATED, and only complete requirement evidence with no violation may be SATISFIED. Descriptive statistics remain UNDECIDED. Callers whose algorithms can report no demand or undefined evidence must retain those explicit decisions rather than infer satisfaction from coverage alone.</p></html>"));
+    Documentation(info="<html><p>Preserve <code>NOT_APPLICABLE</code> and <code>INVALID</code> statuses. Otherwise, a recorded violation gives <code>VIOLATED</code>. Complete data with no violation gives <code>SATISFIED</code> only when <code>isRequirement=true</code>; all remaining cases give <code>UNDECIDED</code>.</p><p>The caller must establish whether the requirement applies and whether a violation is supported by valid observations.</p></html>"));
 end ToVerdict;

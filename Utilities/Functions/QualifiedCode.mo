@@ -1,5 +1,5 @@
 within EvaluationLibrary.Utilities.Functions;
-function QualifiedCode "Prevent an incomplete or invalid child from supplying a satisfied verdict"
+function QualifiedCode "Qualify a verdict using its data status"
  input Integer status "DataStatus ordinal";
  input Integer verdict "Verdict ordinal";
  output Integer code "Qualified Verdict ordinal";
@@ -21,5 +21,5 @@ algorithm
         Text(extent={{-50.209,-59.358},{50.209,-78.08}}, textString="Q + V", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
-    Documentation(info="<html><p>INVALID has priority. Non-applicable items are excluded, witnessed violations remain violations, and a non-complete child cannot contribute SATISFIED. This does not use the numerical ordering of the enumeration.</p></html>"));
+    Documentation(info="<html><p>Return a verdict code consistent with the supplied data-status code. Invalid or unrecognised codes give <code>INVALID</code>; not-applicable inputs give <code>NOT_APPLICABLE</code>. A recorded violation remains <code>VIOLATED</code>.</p><p>A status other than <code>COMPLETE</code> cannot supply a satisfied verdict and is returned as <code>UNDECIDED</code> unless a higher-priority outcome applies. Codes use the declared enumeration ordinals.</p></html>"));
 end QualifiedCode;

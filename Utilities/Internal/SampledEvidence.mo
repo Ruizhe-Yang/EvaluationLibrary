@@ -1,10 +1,10 @@
 within EvaluationLibrary.Utilities.Internal;
-block SampledEvidence "Half-open uniform sample coverage and latched invalidity"
+block SampledEvidence "Track validity and coverage on a uniform sample grid"
   parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive window start, s";
   parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive window end, s";
   parameter Boolean applicable = true "Whether the analysis applies";
 
-  input Boolean dataOK "Already checked input validity and numerical domain";
+  input Boolean dataOK "Input validity and numerical-domain condition checked by the caller";
 
   Modelica.Blocks.Interfaces.BooleanOutput inWindow "Current point lies in applicable window" annotation(Placement(transformation(extent={{94,18},{106,30}}), iconTransformation(extent={{94,18},{106,30}})));
   output EvaluationLibrary.Utilities.Types.DataStatus dataState "Collection and data validity state";
@@ -14,7 +14,7 @@ block SampledEvidence "Half-open uniform sample coverage and latched invalidity"
   parameter Integer minimumSamples(min=1) = 2 "Minimum valid observations";
   Modelica.Blocks.Interfaces.IntegerOutput validSamples(start=0,fixed=true) "Accepted observations" annotation(Placement(transformation(extent={{94,-30},{106,-18}}), iconTransformation(extent={{94,-30},{106,-18}})));
 
-  output Boolean takeTick "Take tick";
+  output Boolean takeTick "Accept the current scheduled sample tick";
   output Integer receivedSamples(start=0,fixed=true) "All observed scheduled ticks, including invalid samples";
   output Modelica.Units.SI.Time observedDuration "Observed half-open window duration";
   output Modelica.Units.SI.Time validDuration "Duration of valid input; sampled qualification still uses validSamples";
@@ -23,15 +23,15 @@ protected
   discrete Real validElapsed(start=0,fixed=true) "Completed valid segment duration";
   discrete Real validEnteredAt(start=0,fixed=true) "Start of the current valid segment";
 
-  parameter Modelica.Units.SI.Time simulationStart(fixed=false) "Observed simulation initialization time";
-  Boolean invalidSeen "Invalid seen";
-  Boolean sufficient "Sufficient";
+  parameter Modelica.Units.SI.Time simulationStart(fixed=false) "Simulation initialisation time";
+  Boolean invalidSeen "An invalid scheduled sample has been observed";
+  Boolean sufficient "Required sample count and full grid coverage are available";
 
   final parameter Modelica.Units.SI.Time firstSample = windowStart+sampleOffset "First scheduled uniform observation time";
   final parameter Real tickSpan = (windowEnd-firstSample)/samplePeriod "Number of scheduled grid intervals";
   final parameter Integer expected = if tickSpan <= 0 then 0 else
-    max(1,integer(ceil(tickSpan-8*Modelica.Constants.eps*max(1,abs(tickSpan))))) "Declared expected value or sample count";
-  discrete Boolean badSample(start=false,fixed=true) "Bad sample";
+    max(1,integer(ceil(tickSpan-8*Modelica.Constants.eps*max(1,abs(tickSpan))))) "Number of scheduled samples in the half-open window";
+  discrete Boolean badSample(start=false,fixed=true) "Latched invalid scheduled sample";
 
 initial equation
   simulationStart = time;
@@ -86,5 +86,5 @@ equation
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),
-    Documentation(info="<html><p>Half-open uniform sample coverage and latched invalidity. Inputs retain the physical units or logical meaning stated by their declarations. Domain assertions and explicit availability flags are part of the contract.</p></html>"));
+    Documentation(info="<html><p>Observe scheduled ticks from <code>windowStart + sampleOffset</code> within <code>[windowStart, windowEnd)</code>. Invalid scheduled samples latch invalidity. <code>receivedSamples</code> counts observed ticks and <code>validSamples</code> counts accepted ticks; duration fields are tracked separately.</p><p>Complete evidence requires the full declared grid, at least <code>minimumSamples</code> valid samples and a simulation start no later than the window start. The helper remains <code>PENDING</code> before <code>windowEnd</code>. <code>takeTick</code> qualifies a tick and must be used together with the declared sample clock.</p></html>"));
 end SampledEvidence;

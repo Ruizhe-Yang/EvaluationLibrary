@@ -1,5 +1,5 @@
 within EvaluationLibrary;
-package Response "Response"
+package Response "Event timing, response measurements and duration statistics"
   extends Modelica.Icons.Package;
   annotation(Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={
@@ -9,5 +9,5 @@ package Response "Response"
         Line(points={{7.36,15.64},{7.36,-39.56}}, color={128,128,128}, thickness=0.45, pattern=LinePattern.Dot),
         Line(points={{-29.44,-36.8},{7.36,-36.8}}, color={128,128,128}, thickness=0.65, pattern=LinePattern.Solid, arrow={Arrow.Filled,Arrow.Filled})
       }));
-  annotation(Documentation(info="<html><p>package supports the single complete-result and explicit qualification contract. See the parameter and field descriptions for its numerical or logical meaning.</p></html>"));
+  annotation(Documentation(info="<html><p>Blocks for event counts, request-response delays, transition times, recovery, settling and condition duration. <code>EventAssessment</code> combines multiple event tasks in one fixed window. Individual blocks provide specialised outputs or configurable observation windows.</p></html>"));
 end Response;

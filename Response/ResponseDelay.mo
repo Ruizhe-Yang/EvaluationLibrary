@@ -1,40 +1,40 @@
 within EvaluationLibrary.Response;
-block ResponseDelay "Pair the first qualified request with the first response after it"
-  parameter String metricId=getInstanceName() "Stable metric identity";
-  parameter String requirementId="" "Requirement identity; empty for a statistic";
-  parameter String requirementVersion="" "Interpreted requirement version";
-  parameter String unitName="s" "Engineering unit of the reported value";
-parameter EvaluationLibrary.Utilities.Types.WindowMode windowMode=EvaluationLibrary.Utilities.Types.WindowMode.FixedTime "Fixed-time or first externally gated observation window";
-  parameter Modelica.Units.SI.Time windowStart=0 "Inclusive observation start in seconds";
-  parameter Modelica.Units.SI.Time windowStop=5 "Exclusive observation stop in seconds";
-  parameter Boolean applicable=true "Whether this evaluation applies";
-  parameter Boolean useValidInput=false "Expose the host-provided validity connector";
+block ResponseDelay "Measure the delay between the first request and response edges"
+  parameter String metricId=getInstanceName() "Identifier carried by the result";
+  parameter String requirementId="" "Optional requirement identifier";
+  parameter String requirementVersion="" "Optional requirement version";
+  parameter String unitName="s" "Unit label for the reported value";
+parameter EvaluationLibrary.Utilities.Types.WindowMode windowMode=EvaluationLibrary.Utilities.Types.WindowMode.FixedTime "Fixed interval or first contiguous external window";
+  parameter Modelica.Units.SI.Time windowStart=0 "Inclusive start of the observation window";
+  parameter Modelica.Units.SI.Time windowStop=5 "Exclusive end of the observation window";
+  parameter Boolean applicable=true "True if this assessment is applicable";
+  parameter Boolean useValidInput=false "Enable the optional input validity connector";
 
-  parameter Modelica.Units.SI.Time samplePeriod(min=0)=0.01 "Positive uniform sampling interval in seconds";
-  parameter Modelica.Units.SI.Time sampleStart=0 "Uniform sample grid origin in seconds";
-  Modelica.Blocks.Interfaces.BooleanInput valid if useValidInput "Host declares the observed inputs valid" annotation(Placement(transformation(origin={70,100},extent={{-10,-10},{10,10}}),iconTransformation(origin={70,100},extent={{-10,-10},{10,10}})));
+  parameter Modelica.Units.SI.Time samplePeriod(min=0)=0.01 "Uniform sampling interval for sampled evaluation";
+  parameter Modelica.Units.SI.Time sampleStart=0 "Time origin of the uniform sample grid";
+  Modelica.Blocks.Interfaces.BooleanInput valid if useValidInput "True if the observed inputs are valid" annotation(Placement(transformation(origin={70,100},extent={{-10,-10},{10,10}}),iconTransformation(origin={70,100},extent={{-10,-10},{10,10}})));
   Modelica.Blocks.Interfaces.BooleanInput window if windowMode==EvaluationLibrary.Utilities.Types.WindowMode.ExternalSingle "External observation gate; only the first contiguous interval is accepted" annotation(Placement(transformation(origin={-100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,70},extent={{-10,-10},{10,10}})));
-  output EvaluationLibrary.Utilities.Types.DataStatus dataStatus "Evidence qualification independent of requirement verdict";
-  output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement decision independent of observation completeness";
-  output Boolean complete "Collection has closed; inspect DataStatus before assuming full evidence";
-  output Boolean everViolated "A qualified violation witness exists";
-  output Modelica.Units.SI.Time firstViolationTime "First qualified violation instant; meaningful only when everViolated";
-  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete directly reportable evidence result" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanInput request "Request" annotation(Placement(transformation(origin={-70,100},extent={{-10,-10},{10,10}}),iconTransformation(origin={-70,100},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanInput response "Response" annotation(Placement(transformation(origin={-100,23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,23.33333},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanOutput matched(start=false,fixed=true) "Matched" annotation(Placement(transformation(origin={100,23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,23.33333},extent={{-10,-10},{10,10}})));
-  discrete Modelica.Units.SI.Time requestTime(start=0,fixed=true) "Request time";
-  discrete Modelica.Units.SI.Time responseTime(start=0,fixed=true) "Response time";
-  Modelica.Blocks.Interfaces.RealOutput value "Numerical metric; meaningful only when available" annotation(Placement(transformation(origin={100,-23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-23.33333},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanOutput available "The numerical output exists in the current data domain" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
+  output EvaluationLibrary.Utilities.Types.DataStatus dataStatus "Observation coverage and data validity";
+  output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement outcome, separate from data qualification";
+  output Boolean complete "Observation has ended; completeness is reported by dataStatus";
+  output Boolean everViolated "True after a valid violation has been observed";
+  output Modelica.Units.SI.Time firstViolationTime "Time of the first valid violation";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Value, qualification and requirement outcome" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanInput request "Request rising edge" annotation(Placement(transformation(origin={-70,100},extent={{-10,-10},{10,10}}),iconTransformation(origin={-70,100},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanInput response "Actual response rising edge" annotation(Placement(transformation(origin={-100,23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,23.33333},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanOutput matched(start=false,fixed=true) "True after the first request-response pair is complete" annotation(Placement(transformation(origin={100,23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,23.33333},extent={{-10,-10},{10,10}})));
+  discrete Modelica.Units.SI.Time requestTime(start=0,fixed=true) "Time of the first accepted request edge";
+  discrete Modelica.Units.SI.Time responseTime(start=0,fixed=true) "Time of the first matched response edge";
+  Modelica.Blocks.Interfaces.RealOutput value "Numerical result; meaningful only when available" annotation(Placement(transformation(origin={100,-23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-23.33333},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanOutput available "True if the numerical result is available" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
 protected
-  Modelica.Blocks.Interfaces.BooleanInput trusted "Trusted" annotation(Placement(transformation(origin={-100,-23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-23.33333},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanInput trusted "Effective input validity" annotation(Placement(transformation(origin={-100,-23.33333},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-23.33333},extent={{-10,-10},{10,10}})));
   Modelica.Blocks.Interfaces.BooleanInput externalWindow "External window" annotation(Placement(transformation(origin={-100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={-100,-70},extent={{-10,-10},{10,10}})));
   EvaluationLibrary.Utilities.Internal.WindowEvidence gate(windowMode=windowMode,windowStart=windowStart,windowStop=windowStop,
-    sampled=false,samplePeriod=samplePeriod,sampleStart=sampleStart,applicable=applicable) "Gate";
-  Boolean dataOK "Data ok";
-  Boolean violationNow "Violation now";
-  discrete Boolean requested(start=false,fixed=true) "Requested";
+    sampled=false,samplePeriod=samplePeriod,sampleStart=sampleStart,applicable=applicable) "Observation window and data qualification";
+  Boolean dataOK "True if input validity and numerical checks pass";
+  Boolean violationNow "Valid requirement violation at the current instant";
+  discrete Boolean requested(start=false,fixed=true) "True after the first request has been accepted";
 equation
   connect(valid,trusted);
   connect(window,externalWindow);
@@ -112,5 +112,5 @@ algorithm
         Text(extent={{-65,-50},{65,-75}}, textString="dt_first", textColor={64,64,64}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
-    Documentation(info="<html><p>Measure only the first accepted request and subsequent actual response, including a same-instant response. Request and response are independent observed conditions. The delay is in seconds and is unavailable until matched; an unmatched closing request is censored. Use EventAssessment or RepeatedResponse for repeated tasks rather than reinterpreting this first-pair measurement.</p><p>The default fixed observation is [0,5) s. ExternalSingle instead observes only the first contiguous external gate; a later gate invalidates the history. useValidInput defaults to false; when enabled, false validity or nonfinite in-window data latch INVALID. Early normal termination or missing coverage is INCOMPLETE. DataStatus qualifies evidence independently of Verdict. Numeric availability and violation witnesses must be inspected separately. Stable identity, unitName and optional requirement metadata originate here and travel directly with result to a writer.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
+    Documentation(info="<html><p>Records the first valid request rising edge and the first valid response rising edge at or after it within the observation window. Requests are processed before same-instant responses, so zero delay is permitted. A response that was already true before the request is not a new response edge.</p><p>The output becomes available when <code>matched</code> is true and then equals <code>responseTime-requestTime</code>. Configure the window and optional validity input. This measurement does not impose a deadline.</p></html>"));
 end ResponseDelay;

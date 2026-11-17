@@ -1,11 +1,11 @@
 within EvaluationLibrary.Utilities.Functions;
-function SampleCount "Count a finite half-open window on an explicit sample grid"
+function SampleCount "Count uniform samples in a half-open interval"
   extends Modelica.Icons.Function;
-input Modelica.Units.SI.Time left "Left";
-  input Modelica.Units.SI.Time right "Right";
-  input Modelica.Units.SI.Time origin "Origin";
-  input Modelica.Units.SI.Time period "Period";
-  output Integer n "Number of channels, records or configured items; at least one";
+input Modelica.Units.SI.Time left "Inclusive interval start";
+  input Modelica.Units.SI.Time right "Exclusive interval stop";
+  input Modelica.Units.SI.Time origin "First point of the non-negative sample grid";
+  input Modelica.Units.SI.Time period "Positive sample-grid spacing";
+  output Integer n "Number of grid points in the interval";
 algorithm
   assert(period>0,"Sample period must be positive.");
   n:=max(0,integer(ceil((right-origin)/period-1e-9))-max(0,integer(ceil((left-origin)/period-1e-9))));
@@ -28,5 +28,5 @@ algorithm
         Ellipse(extent={{22.977,5.318},{28.083,10.424}}, lineColor={0,0,127}, fillColor={0,0,127}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.8),
         Text(extent={{-21.275,-35.53},{21.275,-65.315}}, textString="n", textColor={108,88,49}, fontSize=0)
       }),
-    Documentation(info="<html><p>Sample count. Inputs retain the physical units or logical meaning stated by their declarations. Domain assertions and explicit availability flags are part of the contract.</p></html>"));
+    Documentation(info="<html><p>Count points of the grid <code>origin + k*period</code>, with non-negative integer <code>k</code>, that fall in <code>[left, right)</code>. The period must be positive. A small rounding allowance is applied when converting interval boundaries to grid indices.</p></html>"));
 end SampleCount;

@@ -1,11 +1,11 @@
 within EvaluationLibrary.Comparison;
-block Improvement "Report absolute and relative improvement with an explicit preferred direction"
+block Improvement "Absolute and relative improvement between paired results"
 extends EvaluationLibrary.Comparison.PairedDifference;
   parameter EvaluationLibrary.Utilities.Types.Sense sense=EvaluationLibrary.Utilities.Types.Sense.LowerIsBetter "Explicit direction of desirable change";
-  parameter Real referenceFloor(min=0)=1e-12 "Positive reference magnitude floor; smaller magnitudes are undefined";
-    Modelica.Blocks.Interfaces.RealOutput absoluteImprovement "Absolute improvement" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.RealOutput relativeImprovement "Relative improvement" annotation(Placement(transformation(origin={100,0},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,0},extent={{-10,-10},{10,10}})));
-  Modelica.Blocks.Interfaces.BooleanOutput relativeAvailable "Relative available" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
+  parameter Real referenceFloor(min=0)=1e-12 "Reference magnitude floor for numerical availability";
+    Modelica.Blocks.Interfaces.RealOutput absoluteImprovement "Improvement with sign set by the preferred direction" annotation(Placement(transformation(origin={100,70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,70},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.RealOutput relativeImprovement "Absolute improvement divided by the reference magnitude" annotation(Placement(transformation(origin={100,0},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,0},extent={{-10,-10},{10,10}})));
+  Modelica.Blocks.Interfaces.BooleanOutput relativeAvailable "True when relative improvement is defined" annotation(Placement(transformation(origin={100,-70},extent={{-10,-10},{10,10}}),iconTransformation(origin={100,-70},extent={{-10,-10},{10,10}})));
 initial equation
   assert(referenceFloor>=0,"Negative baseline floor.");
 equation
@@ -23,5 +23,5 @@ equation
         Text(extent={{1,38},{48,17}}, textString="cand", textColor={0,0,127}, fontSize=0),
         Text(extent={{-65,-50},{65,-75}}, textString="gain / |ref|", textColor={64,64,64}, fontSize=0)
       }),
-    Documentation(info="<html><p>Reuse the qualified PairedDifference contract and specify whether lower or higher is better; LowerIsBetter is the default. absoluteImprovement changes sign according to this direction. referenceFloor defaults to 1e-12 in the reference unit and guards relative improvement when the reference is too small. This semantic inheritance preserves shared pair matching instead of duplicating it.</p></html>"));
+    Documentation(info="<html><p>Extends <code>PairedDifference</code> with a preferred direction. For <code>LowerIsBetter</code>, a reduced candidate value gives positive <code>absoluteImprovement</code>; for <code>HigherIsBetter</code>, an increased value does so. Relative improvement divides by the absolute reference value when it exceeds the non-negative <code>referenceFloor</code>.</p><p>Inspect <code>available</code> and <code>relativeAvailable</code> before using these outputs. The inherited <code>result</code> connector continues to report the signed candidate-minus-reference difference; the improvement outputs are separate.</p></html>"));
 end Improvement;

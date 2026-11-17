@@ -1,8 +1,8 @@
 within EvaluationLibrary.Utilities.Functions;
-function QuoteCSV "Quote one CSV text field including newlines and quotes"
+function QuoteCSV "Quote and escape a CSV field"
   extends Modelica.Icons.Function;
-input String text "Text";
-  output String escaped "Escaped";
+input String text "Unescaped field content";
+  output String escaped "Quoted field with embedded quotes doubled";
 algorithm
   escaped:="\""+Modelica.Utilities.Strings.replace(text,"\"","\"\"")+"\"";
   annotation(Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
@@ -22,5 +22,5 @@ algorithm
         Line(points={{54.8895,10.424},{54.8895,1.063},{52.3365,-5.745}}, color={108,88,49}, thickness=1.4, pattern=LinePattern.Solid),
         Text(extent={{-39.146,-43.189},{39.146,-68.719}}, textString="CSV", textColor={108,88,49}, fontSize=0)
       }),
-    Documentation(info="<html><p>Quote csv. Inputs retain the physical units or logical meaning stated by their declarations. Domain assertions and explicit availability flags are part of the contract.</p></html>"));
+    Documentation(info="<html><p>Enclose <code>text</code> in double quotation marks and double each embedded quotation mark. Commas and line breaks are retained inside the quoted field.</p></html>"));
 end QuoteCSV;

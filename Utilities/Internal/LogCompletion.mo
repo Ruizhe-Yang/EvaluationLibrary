@@ -1,5 +1,5 @@
 within EvaluationLibrary.Utilities.Internal;
-impure function LogCompletion "Print one audit message when an output has been finalised"
+impure function LogCompletion "Print the outcome of a completed output operation"
   extends Modelica.Icons.Function;
   input String operation "Created, overwritten, skipped, or finalised artefact";
   input String outputType "CSV, text, console, in-memory table, or aggregate";
@@ -9,16 +9,16 @@ impure function LogCompletion "Print one audit message when an output has been f
   input Integer recordCount(min=0)=0 "Number of reported records";
   input Modelica.Units.SI.Time simulationTime=0 "Simulation time when finalised";
   input String status="SUCCESS" "SUCCESS or SKIPPED";
-  output Boolean logged "Logged";
+  output Boolean logged "The message was printed";
 protected
-  Integer ms "Ms";
-  Integer sec "Sec";
-  Integer minute "Minute";
-  Integer hour "Hour";
-  Integer day "Day";
-  Integer month "Month";
-  Integer year "Year";
-  String timestamp "Timestamp";
+  Integer ms "Millisecond part of the local clock";
+  Integer sec "Second part of the local clock";
+  Integer minute "Minute part of the local clock";
+  Integer hour "Hour part of the local clock";
+  Integer day "Calendar day";
+  Integer month "Calendar month";
+  Integer year "Calendar year";
+  String timestamp "Formatted host-local clock reading";
 algorithm
   (ms,sec,minute,hour,day,month,year):=Modelica.Utilities.System.getTime();
   timestamp:=String(year)+"-"+(if month<10 then "0" else "")+String(month)
@@ -49,5 +49,5 @@ algorithm
         Line(points={{32.338,-22.5523},{32.338,-36.381},{44.0393,-42.7635}}, color={64,64,64}, thickness=0.8, pattern=LinePattern.Solid),
         Text(extent={{-52.762,-47.444},{-6.808,-69.57}}, textString="log", textColor={108,88,49}, fontSize=0)
       }),
-    Documentation(info="<html><p>Log completion. Inputs retain the physical units or logical meaning stated by their declarations. Domain assertions and explicit availability flags are part of the contract.</p></html>"));
+    Documentation(info="<html><p>Print one console message containing the operation, destination, identifiers, record count and supplied status. The message also includes the simulation instant and the host-local clock reading. Return true after printing.</p><p>This impure helper reports the supplied outcome; it does not perform the output operation or verify its success.</p></html>"));
 end LogCompletion;

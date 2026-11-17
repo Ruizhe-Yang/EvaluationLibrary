@@ -1,5 +1,5 @@
 within EvaluationLibrary.Examples;
-model RepeatedEventMatching "Match repeated requests and responses one to one"
+model RepeatedEventMatching "Match repeated request and response edges in FIFO order"
  Modelica.Blocks.Sources.BooleanPulse requests(period=0.4,width=20,startTime=0.1) "Requests" annotation(Placement(transformation(origin={-80,50},extent={{-10,-10},{10,10}})));
  Modelica.Blocks.Sources.BooleanPulse responses(period=0.4,width=20,startTime=0.2) "Responses" annotation(Placement(transformation(origin={-80,0},extent={{-10,-10},{10,10}})));
  Modelica.Blocks.Sources.BooleanPulse extraResponses(period=0.2,width=20,startTime=0.15) "Extra responses" annotation(Placement(transformation(origin={-80,-50},extent={{-10,-10},{10,10}})));
@@ -25,5 +25,5 @@ equation
         Line(points={{63.04,1.44},{63.04,-12.96}}, color={0,0,127}, thickness=1, pattern=LinePattern.Solid),
         Line(points={{55.84,10.08},{63.04,1.92}}, color={128,128,128}, thickness=0.65, pattern=LinePattern.Solid, arrow={Arrow.None,Arrow.Filled}),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
-      }),Documentation(info="<html><p>Match repeated requests and responses one to one. All excitation, observation and result reporting are internal. No external input ports or result-field equations are required.</p><p>Three requests occur at 0.1,0.5,0.9 s. The first channel matches three delays of 0.1 s. The second matches three delays of 0.05 s and retains three unmatched extra responses. Extra feedback cannot count as a second success for the same request.</p><p>The console lists each metric and its data qualification separately from its verdict. Statistics without a requirement remain UNDECIDED, including when numerical evidence is COMPLETE. See verification/example_verification.md for measured values and the actual compiler scope.</p></html>"));
+      }),Documentation(info="<html><p>Generates three requests at 0.1, 0.5 and 0.9 s. The first channel matches three 0.1 s delays; the second matches three 0.05 s delays and records three additional unmatched responses. Inspect <code>assessment.matched</code>, <code>assessment.unmatchedResponse</code> and the reported mean delays.</p></html>"));
 end RepeatedEventMatching;

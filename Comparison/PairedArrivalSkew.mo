@@ -1,37 +1,37 @@
 within EvaluationLibrary.Comparison;
-block PairedArrivalSkew "Arrival-time skew between two independently observed events"
-  parameter String metricId=getInstanceName() "Stable identity of this retained specialist";
-  parameter String requirementId="" "Requirement identity, when configured";
-  parameter String requirementVersion="" "Interpreted requirement version";
-  parameter String unitName="s" "Engineering unit of the reported specialist value";
-  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete specialist result" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
-  Boolean terminalSeen(start=false,fixed=true) "Terminal seen";
-  discrete Boolean qualifiedViolation(start=false,fixed=true) "Qualified violation";
-  discrete Real qualifiedViolationTime(start=0,fixed=true) "Qualified violation time";
-  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Result status";
-  parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive window start, s";
-  parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive window end, s";
-  parameter Boolean applicable = true "Whether the analysis applies";
+block PairedArrivalSkew "Time difference between two first observed arrivals"
+  parameter String metricId=getInstanceName() "Metric identifier";
+  parameter String requirementId="" "Optional requirement identifier";
+  parameter String requirementVersion="" "Requirement version";
+  parameter String unitName="s" "Engineering unit of the reported value";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Result record with value, status and observation metadata" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
+  Boolean terminalSeen(start=false,fixed=true) "True after normal simulation termination";
+  discrete Boolean qualifiedViolation(start=false,fixed=true) "Retained valid violation flag";
+  discrete Real qualifiedViolationTime(start=0,fixed=true) "First valid violation time";
+  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Status used in the result record";
+  parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive observation start";
+  parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive observation end";
+  parameter Boolean applicable = true "Whether this evaluation applies";
 
-  Modelica.Blocks.Interfaces.BooleanInput valid "Host-provided input validity" annotation(Placement(transformation(extent={{-106,42},{-94,54}}), iconTransformation(extent={{-106,42},{-94,54}})));
+  Modelica.Blocks.Interfaces.BooleanInput valid "External input-validity condition" annotation(Placement(transformation(extent={{-106,42},{-94,54}}), iconTransformation(extent={{-106,42},{-94,54}})));
 
-  Modelica.Blocks.Interfaces.BooleanOutput inWindow "Current point lies in applicable window" annotation(Placement(transformation(extent={{94,42},{106,54}}), iconTransformation(extent={{94,42},{106,54}})));
-  output EvaluationLibrary.Utilities.Types.DataStatus dataState "Collection and data validity state";
+  Modelica.Blocks.Interfaces.BooleanOutput inWindow "True while the observation window is active" annotation(Placement(transformation(extent={{94,42},{106,54}}), iconTransformation(extent={{94,42},{106,54}})));
+  output EvaluationLibrary.Utilities.Types.DataStatus dataState "Status of the observation data";
   Modelica.Blocks.Interfaces.RealOutput observedDuration(unit="s") "Accumulated valid duration" annotation(Placement(transformation(extent={{94,-6},{106,6}}), iconTransformation(extent={{94,-6},{106,6}})));
   parameter Modelica.Units.SI.Time maximumSkew(min=0) = 0.1 "Maximum absolute skew";
   Modelica.Blocks.Interfaces.BooleanInput a "First stream arrival condition" annotation(Placement(transformation(extent={{-106,-6},{-94,6}}), iconTransformation(extent={{-106,-6},{-94,6}})));
   Modelica.Blocks.Interfaces.BooleanInput b "Second stream arrival condition" annotation(Placement(transformation(extent={{-106,-54},{-94,-42}}), iconTransformation(extent={{-106,-54},{-94,-42}})));
   Modelica.Blocks.Interfaces.RealOutput skew(unit="s") "First B time minus first A time" annotation(Placement(transformation(extent={{94,-54},{106,-42}}), iconTransformation(extent={{94,-54},{106,-42}})));
-  output Modelica.Units.SI.Time arrivedA(start=0,fixed=true) "Arrived a";
-  output Modelica.Units.SI.Time arrivedB(start=0,fixed=true) "Arrived b";
-  output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement decision independent of observation completeness";
+  output Modelica.Units.SI.Time arrivedA(start=0,fixed=true) "First qualified arrival time on input a";
+  output Modelica.Units.SI.Time arrivedB(start=0,fixed=true) "First qualified arrival time on input b";
+  output EvaluationLibrary.Utilities.Types.Verdict verdict "Requirement verdict";
 protected
-  EvaluationLibrary.Utilities.Internal.ContinuousEvidence evidence(windowStart=windowStart,windowEnd=windowEnd,applicable=applicable) "Evidence";
-  Boolean dataOK "Validity combined with the metric data domain";
-  discrete Boolean seenA(start=false,fixed=true) "Seen a";
-  discrete Boolean seenB(start=false,fixed=true) "Seen b";
-  Boolean hitA "Hit a";
-  Boolean hitB "Hit b";
+  EvaluationLibrary.Utilities.Internal.ContinuousEvidence evidence(windowStart=windowStart,windowEnd=windowEnd,applicable=applicable) "Observation coverage and qualification";
+  Boolean dataOK "External validity and numerical-domain checks";
+  discrete Boolean seenA(start=false,fixed=true) "True after the first qualified arrival on a";
+  discrete Boolean seenB(start=false,fixed=true) "True after the first qualified arrival on b";
+  Boolean hitA "Qualified arrival condition for a";
+  Boolean hitB "Qualified arrival condition for b";
 initial equation
   assert(maximumSkew >= 0,"Skew must be nonnegative.");
 equation
@@ -95,5 +95,5 @@ equation
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),
-    Documentation(info="<html><p>Observe first qualified arrival conditions a and b and return their signed time skew in seconds. maximumSkew defaults to 0.1 s and is a nonnegative inclusive absolute-skew limit. Both arrivals are required for a defined skew; a missing arrival is not a zero-latency success.</p><p>The fixed observation defaults to [0,5) s. valid is host-provided and false validity or a failed numeric-domain check inside the window latches INVALID. Positive valid duration is needed for duration-normalized values. A normal stop before full observation gives an INCOMPLETE complete result; DataStatus and Verdict remain separate.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
+    Documentation(info="<html><p>Records the first qualified true conditions on <code>a</code> and <code>b</code>, including a condition already true when the window opens. <code>skew</code> is the first B time minus the first A time. Both arrivals are needed for an available value.</p><p>Connect <code>valid</code> and configure <code>[windowStart, windowEnd)</code>. With complete valid coverage, <code>abs(skew) &lt;= maximumSkew</code> satisfies the requirement. A missing arrival leaves the decision unresolved.</p></html>"));
 end PairedArrivalSkew;

@@ -1,7 +1,7 @@
 within EvaluationLibrary.Examples;
-model MultiResultSummary "Retain every child while aggregating required applicable results"
+model MultiResultSummary "Combine required verdicts while retaining individual results"
  Modelica.Blocks.Sources.Constant safe(k=0.5) "Safe" annotation(Placement(transformation(origin={-90,50},extent={{-10,-10},{10,10}})));
- Modelica.Blocks.Sources.Constant unsafe(k=1.5) "Unsafe" annotation(Placement(transformation(origin={-90,-30},extent={{-10,-10},{10,10}})));
+ Modelica.Blocks.Sources.Constant unsafe(k=1.5) "Condition whose occupied duration is measured" annotation(Placement(transformation(origin={-90,-30},extent={{-10,-10},{10,10}})));
  EvaluationLibrary.Statistics.SignalAssessment assessment(n=3,metricId={"within_1","over_bound","within_2"},lower=zeros(3),upper=fill(1,3),windowStop=1) "Assessment" annotation(Placement(transformation(origin={-20,20},extent={{-10,-10},{10,10}})));
  EvaluationLibrary.Requirements.WithinBand notApplicable(applicable=false,metricId="optional_not_applicable",windowStop=1) "Not applicable" annotation(Placement(transformation(origin={-20,-50},extent={{-10,-10},{10,10}})));
  EvaluationLibrary.Results.VerdictAggregator aggregate(n=4,required={true,true,true,false},logOnComplete=false) "Aggregate" annotation(Placement(transformation(origin={40,60},extent={{-10,-10},{10,10}})));
@@ -34,5 +34,5 @@ equation
         Rectangle(extent={{47.2,-9.12},{68.8,10.08}}, lineColor={64,64,64}, fillColor={255,255,255}, fillPattern=FillPattern.Solid, pattern=LinePattern.Solid, lineThickness=0.5, radius=0),
         Text(extent={{49.6,8.64},{66.4,-7.2}}, textString="&", textColor={0,0,127}, fontSize=0),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
-      }),Documentation(info="<html><p>Retain every child while aggregating required applicable results. All excitation, observation and result reporting are internal. No external input ports or result-field equations are required.</p><p>The complete window gives SATISFIED, VIOLATED, SATISFIED and NOT_APPLICABLE children. The required conjunction is VIOLATED. The aggregator retains all child records; the writer consumes them independently without a ResultTable.</p><p>The console lists each metric and its data qualification separately from its verdict. Statistics without a requirement remain UNDECIDED, including when numerical evidence is COMPLETE. See verification/example_verification.md for measured values and the actual compiler scope.</p></html>"));
+      }),Documentation(info="<html><p>Evaluates three channels against an inclusive [0,1] interval and adds one optional, inapplicable requirement. The channel verdicts are satisfied, violated and satisfied; the required conjunction is violated. Inspect <code>aggregate</code> and the console output to compare the combined verdict with the four individual results.</p></html>"));
 end MultiResultSummary;

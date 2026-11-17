@@ -1,31 +1,31 @@
 within EvaluationLibrary.Statistics;
-block ControlEffort "Normalized squared actuator effort and rated-load duration"
-  parameter String metricId=getInstanceName() "Stable identity of this retained specialist";
-  parameter String requirementId="" "Requirement identity, when configured";
-  parameter String requirementVersion="" "Interpreted requirement version";
-  parameter String unitName="s" "Engineering unit of the reported specialist value";
-  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Complete specialist result" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
-  Boolean terminalSeen(start=false,fixed=true) "Terminal seen";
-  discrete Boolean qualifiedViolation(start=false,fixed=true) "Qualified violation";
-  discrete Real qualifiedViolationTime(start=0,fixed=true) "Qualified violation time";
-  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Result status";
-  parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive window start, s";
-  parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive window end, s";
-  parameter Boolean applicable = true "Whether the analysis applies";
+block ControlEffort "Integrated normalised actuator effort and rated-load duration"
+  parameter String metricId=getInstanceName() "Metric identifier";
+  parameter String requirementId="" "Optional requirement identifier";
+  parameter String requirementVersion="" "Requirement version";
+  parameter String unitName="s" "Engineering unit of the reported value";
+  EvaluationLibrary.Utilities.Interfaces.MetricOutput result "Result record with value, status and observation metadata" annotation(Placement(transformation(extent={{90,80},{110,100}}),iconTransformation(extent={{90,80},{110,100}})));
+  Boolean terminalSeen(start=false,fixed=true) "True after normal simulation termination";
+  discrete Boolean qualifiedViolation(start=false,fixed=true) "Retained valid violation flag";
+  discrete Real qualifiedViolationTime(start=0,fixed=true) "First valid violation time";
+  EvaluationLibrary.Utilities.Types.DataStatus resultStatus "Status used in the result record";
+  parameter Modelica.Units.SI.Time windowStart = 0 "Inclusive observation start";
+  parameter Modelica.Units.SI.Time windowEnd = 5 "Exclusive observation end";
+  parameter Boolean applicable = true "Whether this evaluation applies";
 
-  Modelica.Blocks.Interfaces.BooleanInput valid "Host-provided input validity" annotation(Placement(transformation(extent={{-106,18},{-94,30}}), iconTransformation(extent={{-106,18},{-94,30}})));
+  Modelica.Blocks.Interfaces.BooleanInput valid "External input-validity condition" annotation(Placement(transformation(extent={{-106,18},{-94,30}}), iconTransformation(extent={{-106,18},{-94,30}})));
 
-  Modelica.Blocks.Interfaces.BooleanOutput inWindow "Current point lies in applicable window" annotation(Placement(transformation(extent={{94,66},{106,78}}), iconTransformation(extent={{94,66},{106,78}})));
-  output EvaluationLibrary.Utilities.Types.DataStatus dataState "Collection and data validity state";
+  Modelica.Blocks.Interfaces.BooleanOutput inWindow "True while the observation window is active" annotation(Placement(transformation(extent={{94,66},{106,78}}), iconTransformation(extent={{94,66},{106,78}})));
+  output EvaluationLibrary.Utilities.Types.DataStatus dataState "Status of the observation data";
   Modelica.Blocks.Interfaces.RealOutput observedDuration(unit="s") "Accumulated valid duration" annotation(Placement(transformation(extent={{94,18},{106,30}}), iconTransformation(extent={{94,18},{106,30}})));
   parameter Real ratedMagnitude(min=Modelica.Constants.small) = 1 "Positive rated actuator magnitude in the actuator unit";
-  Modelica.Blocks.Interfaces.RealInput applied "Applied" annotation(Placement(transformation(extent={{-106,-30},{-94,-18}}), iconTransformation(extent={{-106,-30},{-94,-18}})));
-  Modelica.Blocks.Interfaces.RealOutput squaredEffort(unit="s",start=0,fixed=true) "Squared effort" annotation(Placement(transformation(extent={{94,-30},{106,-18}}), iconTransformation(extent={{94,-30},{106,-18}})));
-  Modelica.Blocks.Interfaces.RealOutput ratedDuration(unit="s",start=0,fixed=true) "Rated duration" annotation(Placement(transformation(extent={{94,-78},{106,-66}}), iconTransformation(extent={{94,-78},{106,-66}})));
+  Modelica.Blocks.Interfaces.RealInput applied "Applied actuator signal" annotation(Placement(transformation(extent={{-106,-30},{-94,-18}}), iconTransformation(extent={{-106,-30},{-94,-18}})));
+  Modelica.Blocks.Interfaces.RealOutput squaredEffort(unit="s",start=0,fixed=true) "Integral of squared normalised actuator magnitude" annotation(Placement(transformation(extent={{94,-30},{106,-18}}), iconTransformation(extent={{94,-30},{106,-18}})));
+  Modelica.Blocks.Interfaces.RealOutput ratedDuration(unit="s",start=0,fixed=true) "Duration at or above rated magnitude" annotation(Placement(transformation(extent={{94,-78},{106,-66}}), iconTransformation(extent={{94,-78},{106,-66}})));
 protected
-  EvaluationLibrary.Utilities.Internal.ContinuousEvidence evidence(windowStart=windowStart,windowEnd=windowEnd,applicable=applicable) "Evidence";
-  Boolean dataOK "Validity combined with the metric data domain";
-  Real normalized "Normalized";
+  EvaluationLibrary.Utilities.Internal.ContinuousEvidence evidence(windowStart=windowStart,windowEnd=windowEnd,applicable=applicable) "Observation coverage and qualification";
+  Boolean dataOK "External validity and numerical-domain checks";
+  Real normalized "Applied signal divided by rated magnitude";
 initial equation
   assert(ratedMagnitude > 0, "Rated magnitude must be positive.");
 equation
@@ -70,5 +70,5 @@ equation
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
     Diagram(coordinateSystem(extent={{-100,-100},{100,100}}, preserveAspectRatio=true), graphics={Text(extent={{-96,99},{96,88}}, textColor={73,53,132}, textString="ControlEffort")}),
-    Documentation(info="<html><p>Integrate (applied/ratedMagnitude) squared and separately integrate time with absolute normalized load at least one. ratedMagnitude defaults to 1 in the actuator unit and must be positive. Both accumulated outputs have units of seconds; the complete result reports squaredEffort. This measurement declares no pass threshold.</p><p>The fixed observation defaults to [0,5) s. valid is host-provided and false validity or a failed numeric-domain check inside the window latches INVALID. Positive valid duration is needed for duration-normalized values. A normal stop before full observation gives an INCOMPLETE complete result; DataStatus and Verdict remain separate.</p><p>The complete result connects directly to ConsoleWriter. Unavailable numeric values are guarded by valueAvailable; placeholder storage is not evidence. Unit metadata must match the actual input interpretation. A complete descriptive statistic does not automatically have a SATISFIED requirement verdict.</p></html>"));
+    Documentation(info="<html><p>Integrates <code>(applied/ratedMagnitude)^2</code> into <code>squaredEffort</code> and accumulates <code>ratedDuration</code> while <code>abs(applied/ratedMagnitude) &gt;= 1</code>. The rating must be positive. Both outputs have units of seconds; <code>result.value</code> reports squared effort.</p><p>Connect <code>valid</code> and configure the half-open interval <code>[windowStart, windowEnd)</code>. Invalid data within the interval invalidate the result. Normal termination before full coverage is reported as <code>INCOMPLETE</code>. Check the status and availability fields of <code>result</code> when reporting the measurement.</p></html>"));
 end ControlEffort;

@@ -1,5 +1,5 @@
 within EvaluationLibrary.Utilities.Functions;
-function EvidenceMessage "Explain qualification without implying a missing numerical value"
+function EvidenceMessage "Describe result availability and qualification"
  input Integer status "DataStatus code";
  input Integer verdict "Verdict code";
  input Boolean available "Whether the value is available";
@@ -21,5 +21,5 @@ algorithm
         Line(points={{12.765,-14.255},{37.444,-14.255}}, color={128,128,128}, thickness=0.7, pattern=LinePattern.Solid),
         Text(extent={{-150,155},{150,125}}, textString="%name", textColor={0,0,255}, fontSize=0)
       }),
-    Documentation(info="<html><p>EvidenceMessage supports the single complete-result and explicit qualification contract. See the parameter and field descriptions for its numerical or logical meaning.</p></html>"));
+    Documentation(info="<html><p>Return a short explanation from the data-status code, verdict code and numerical availability flag. Not-applicable, invalid, incomplete and pending statuses take precedence over a verdict message.</p><p>This function formats an explanation only; it does not validate codes or infer a numerical value.</p></html>"));
 end EvidenceMessage;
