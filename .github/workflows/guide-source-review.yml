@@ -1,0 +1,29 @@
+name: Guide source review
+on:
+  push:
+    branches: [docs/bilingual-guides-20261112]
+    paths: [.github/workflows/guide-source-review.yml]
+permissions:
+  contents: read
+jobs:
+  source-snapshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Collect the six public source baselines
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p snapshots
+          for name in MSLFaults AnomalyLibrary ProtectionLibrary ScenarioLibrary UncertaintyLibrary EvaluationLibrary; do
+            git clone --quiet --depth 1 --branch main "https://github.com/Ruizhe-Yang/${name}.git" "snapshots/${name}"
+            git -C "snapshots/${name}" rev-parse HEAD > "snapshots/${name}/SOURCE_COMMIT.txt"
+            rm -rf "snapshots/${name}/.git"
+          done
+      - name: Retain the exact source used for the guide review
+        uses: actions/upload-artifact@v4
+        with:
+          name: bilingual-guide-source-snapshots
+          path: snapshots/
+          retention-days: 2
+          if-no-files-found: error

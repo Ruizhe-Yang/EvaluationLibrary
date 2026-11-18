@@ -1,0 +1,48 @@
+name: Final bilingual guide review
+on:
+  push:
+    branches: [docs/bilingual-guides-20261112]
+    paths: [.github/workflows/guide-final-review.yml]
+permissions:
+  contents: read
+jobs:
+  final-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Render and check the reviewed source baselines
+        shell: bash
+        run: |
+          set -euo pipefail
+          python .guide-build/patch_renderer.py
+          mkdir -p preview/builder preview/guides snapshots
+          python - <<'PY'
+          import sys, subprocess, json, shutil
+          from pathlib import Path
+          sys.path.insert(0, '.guide-build')
+          from lessons import LESSONS
+          from build_guides import render
+          manifest=[]
+          for repo, lesson in LESSONS.items():
+              source=Path('snapshots')/repo
+              subprocess.run(['git','clone','--quiet','https://github.com/Ruizhe-Yang/'+repo+'.git',str(source)],check=True)
+              current=subprocess.check_output(['git','-C',str(source),'rev-parse','HEAD'],text=True).strip()
+              subprocess.run(['git','-C',str(source),'checkout','--quiet',lesson['sha']],check=True)
+              output=Path('preview/guides')/(repo+'_LearningGuide.html')
+              item=render(source,repo,lesson['sha'],output)
+              item['current_main_at_review']=current
+              manifest.append(item)
+          for p in Path('.guide-build').glob('*.py'):
+              shutil.copy2(p,Path('preview/builder')/p.name)
+          shutil.copytree('snapshots/EvaluationLibrary','preview/sources/EvaluationLibrary',ignore=shutil.ignore_patterns('.git'))
+          Path('preview/manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
+          print(json.dumps(manifest,ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bilingual-guides-final-preview
+          path: preview/
+          retention-days: 2
+          if-no-files-found: error

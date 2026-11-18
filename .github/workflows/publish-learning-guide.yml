@@ -1,0 +1,34 @@
+name: Publish reviewed learning guide
+on:
+  push:
+    branches: [docs/bilingual-guides-20261112]
+    paths: [.github/workflows/publish-learning-guide.yml]
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Generate the reviewed HTML and commit documentation only
+        shell: bash
+        env:
+          BUILDER: 91c1a95a51f89b54f30d1b0a14bef905ab70da93
+          GUIDE_HASH: f25211eb6dab6d19b964b12b17bd17af4228a7a8fb111fcfa1e91fbdfde87025
+        run: |
+          set -euo pipefail
+          build="${RUNNER_TEMP}/guide-builder"
+          mkdir -p "$build"
+          for name in build_guides titles lesson_helpers lesson_mslfaults lesson_anomaly lesson_protection lesson_scenario lesson_uncertainty lesson_evaluation lessons patch_renderer refinements publish; do
+            curl --fail --silent --show-error --retry 2 "https://raw.githubusercontent.com/Ruizhe-Yang/EvaluationLibrary/${BUILDER}/.guide-build/${name}.py" -o "$build/${name}.py"
+          done
+          python "$build/patch_renderer.py"
+          python "$build/publish.py" --repo EvaluationLibrary --expected-hash "$GUIDE_HASH" --report "${RUNNER_TEMP}/guide-publication.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: guide-publication
+          path: ${{ runner.temp }}/guide-publication.json
+          retention-days: 2
